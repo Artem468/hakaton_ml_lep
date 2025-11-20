@@ -261,3 +261,5 @@ class BatchImagesStatsView(APIView):
             "processed": processed,
             "not_processed": not_processed
         }, status=status.HTTP_200_OK)
+
+

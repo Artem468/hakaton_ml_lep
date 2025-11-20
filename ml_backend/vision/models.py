@@ -69,7 +69,7 @@ class LepImage(models.Model):
         verbose_name="Долгота",
     )
     created_at = models.DateTimeField(null=True, blank=True, verbose_name="Создано")
-    detection_result = models.JSONField(blank=True, null=True, verbose_name="Результат")
+    detection_result = models.JSONField(blank=True, null=True)
 
     def __str__(self):
         return self.file_key

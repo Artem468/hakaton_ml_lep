@@ -52,6 +52,9 @@ class BatchListSerializer(serializers.ModelSerializer):
 class LepImageSerializer(serializers.ModelSerializer):
     uploaded_at = serializers.DateTimeField(source='batch.uploaded_at', read_only=True)
 
+    damages = serializers.SerializerMethodField()
+    objects = serializers.SerializerMethodField()
+
     class Meta:
         model = LepImage
         fields = [
@@ -62,8 +65,40 @@ class LepImageSerializer(serializers.ModelSerializer):
             "latitude",
             "longitude",
             "uploaded_at",
-            "detection_result",
+            "damages",
+            "objects"
         ]
+
+    def _filter_detections(self, data, target_classes):
+        if not data:
+            return []
+
+        return [
+            {
+                "class": item.get("class"),
+                "confidence": item.get("confidence")
+            }
+            for item in data
+            if item.get("class") in target_classes
+        ]
+
+    def get_damages(self, obj):
+        damage_classes = {
+            "bad_insulator",
+            "damaged_insulator",
+            "nest"
+        }
+        return self._filter_detections(obj.detection_result, damage_classes)
+
+    def get_objects(self, obj):
+        object_classes = {
+            "vibration_damper",
+            "festoon_insulators",
+            "traverse",
+            "polymer_insulators",
+            "safety_sign"
+        }
+        return self._filter_detections(obj.detection_result, object_classes)
 
 
 class UploadFileItemSerializer(serializers.Serializer):

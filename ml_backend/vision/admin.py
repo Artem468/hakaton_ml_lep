@@ -29,5 +29,5 @@ class LepImageAdmin(ModelAdmin):
     list_filter = ("batch",)
     autocomplete_fields = ("batch",)
     search_fields = ("file_key",)
-    readonly_fields = ("created_at", "detection_result")
-
+    readonly_fields = ("created_at",)
+    exclude = ("detection_result",)
