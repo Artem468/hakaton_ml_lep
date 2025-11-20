@@ -56,3 +56,31 @@ class InitUploadSerializer(serializers.Serializer):
 class ConfirmUploadSerializer(serializers.Serializer):
     batch_id = serializers.IntegerField()
     model_id = serializers.IntegerField()
+
+
+class BatchStatusSerializer(serializers.ModelSerializer):
+    processing_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Batch
+        fields = ["id", "name", "uploaded_at", "processing_status"]
+
+    def get_processing_status(self, obj: Batch) -> str:
+        if obj.status:
+            return "reviewed"
+
+        images = LepImage.objects.filter(batch=obj)
+        total = images.count()
+
+        processed_count = images.filter(detection_result__isnull=False).count()
+
+        if processed_count == 0:
+            return "not_processed"
+
+        if processed_count < total:
+            return "processing"
+
+        if processed_count == total:
+            return "completed"
+
+        return "not_processed"

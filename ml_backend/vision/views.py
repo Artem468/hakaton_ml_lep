@@ -18,7 +18,7 @@ from .serializers import (
     BatchListSerializer,
     LepImageSerializer,
     InitUploadSerializer,
-    ConfirmUploadSerializer,
+    ConfirmUploadSerializer, BatchStatusSerializer,
 )
 from .utils import make_file_key
 from .tasks import process_image_task
@@ -45,8 +45,8 @@ class BatchPagination(PageNumberPagination):
     tags=["Обработка и отдача фото"],
     summary="Список наборов фото",
     description=(
-        "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
-        "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
+            "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
+            "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
     ),
     parameters=[
         OpenApiParameter(name="page", type=int, description="Номер страницы"),
@@ -64,6 +64,10 @@ class BatchListView(generics.ListAPIView):
     serializer_class = BatchListSerializer
     filterset_class = BatchFilter
     pagination_class = BatchPagination
+
+    @extend_schema(operation_id="batch_list")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 
 class BatchDetailPagination(PageNumberPagination):
@@ -87,18 +91,22 @@ class BatchDetailView(generics.RetrieveAPIView):
     serializer_class = LepImageSerializer
     pagination_class = BatchDetailPagination
 
+    @extend_schema(operation_id="batch_detail")
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class InitUploadAPIView(APIView):
     @extend_schema(
         tags=["Обработка и отдача фото"],
         summary="Создаёт batch и возвращает ключи и pre-signed URL для загрузки картинок",
         description=(
-            "Создаёт новый набор изображений (*batch*) и генерирует ключи "
-            "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
-            "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
-            "**На вход:** список оригинальных имён файлов.\n\n"
-            "**На выход:** `batch_id`, список созданных объектов `LepImage` "
-            "с полями `image_id`, `file_key` и `upload_url`."
+                "Создаёт новый набор изображений (*batch*) и генерирует ключи "
+                "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
+                "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
+                "**На вход:** список оригинальных имён файлов.\n\n"
+                "**На выход:** `batch_id`, список созданных объектов `LepImage` "
+                "с полями `image_id`, `file_key` и `upload_url`."
         ),
         request=InitUploadSerializer,
         responses={
@@ -173,9 +181,9 @@ class ConfirmUploadAPIView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Подтверждение загрузки batch",
         description=(
-            "После того, как клиент загрузил все файлы через pre-signed URL, "
-            "эта ручка проверяет наличие файлов и помечает их как загруженные. "
-            "Также запускается прогон выбранной модели ИИ по новым изображениям."
+                "После того, как клиент загрузил все файлы через pre-signed URL, "
+                "эта ручка проверяет наличие файлов и помечает их как загруженные. "
+                "Также запускается прогон выбранной модели ИИ по новым изображениям."
         ),
         request=ConfirmUploadSerializer,
         responses={
@@ -223,3 +231,14 @@ class ConfirmUploadAPIView(APIView):
             {"batch_id": batch.id, "processed_images": confirmed_count},
             status=status.HTTP_200_OK,
         )
+
+
+@extend_schema(
+    tags=["Обработка и отдача фото"],
+    summary="Статус набора",
+    description="Возвращает статус набора",
+    responses={200: BatchStatusSerializer},
+)
+class BatchStatusView(generics.RetrieveAPIView):
+    queryset = Batch.objects.all()
+    serializer_class = BatchStatusSerializer

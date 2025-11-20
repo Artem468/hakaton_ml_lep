@@ -20,6 +20,7 @@ class AiModel(models.Model):
 class Batch(models.Model):
     name = models.CharField(max_length=100, verbose_name="Название")
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Загружено")
+    status = models.BooleanField(default=False, verbose_name="Просмотрено")
 
     def __str__(self):
         return self.name
