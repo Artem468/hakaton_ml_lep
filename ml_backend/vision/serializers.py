@@ -11,7 +11,6 @@ class AiModelListSerializer(serializers.ModelSerializer):
 
 class BatchListSerializer(serializers.ModelSerializer):
     photo_count = serializers.SerializerMethodField()
-    detection_results = serializers.SerializerMethodField()
     processing_status = serializers.SerializerMethodField()
 
     class Meta:
