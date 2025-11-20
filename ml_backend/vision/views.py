@@ -223,7 +223,7 @@ class ConfirmUploadAPIView(APIView):
                     Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=image.file_key
                 )
                 confirmed_count += 1
-                process_image_task.delay(image.file_key, model_id)
+                # process_image_task.delay(image.file_key, model_id)
             except s3.exceptions.ClientError:
                 continue
 
