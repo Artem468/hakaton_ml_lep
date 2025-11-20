@@ -2,23 +2,22 @@ from io import BytesIO
 from PIL import Image
 from celery import shared_task
 from django.conf import settings
-from .models import LepImage, AiModel
+from .models import LepImage
 from ultralytics import YOLO
 
 
+
 @shared_task
-def process_image_task(file_key: str, model_id: int):
+def process_image_task(file_key: str, model: YOLO):
     s3_client = settings.S3_CLIENT_PRIVATE
     bucket = settings.AWS_STORAGE_BUCKET_NAME
 
     image_obj = LepImage.objects.get(file_key=file_key)
-    model_obj = AiModel.objects.get(id=model_id)
 
     obj = s3_client.get_object(Bucket=bucket, Key=file_key)
     img_data = obj['Body'].read()
     image = Image.open(BytesIO(img_data))
 
-    model = YOLO(model_obj.model_file.path)
     results = model.predict(image, imgsz=640, conf=0.25, save=False)
     r = results[0]
 

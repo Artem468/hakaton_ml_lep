@@ -108,7 +108,7 @@ class UploadFileItemSerializer(serializers.Serializer):
 
 
 class InitUploadSerializer(serializers.Serializer):
-    batch_name = serializers.CharField()
+    batch_name = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     files = UploadFileItemSerializer(many=True)
 
 
@@ -143,3 +143,9 @@ class BatchStatusSerializer(serializers.ModelSerializer):
             return "completed"
 
         return "not_processed"
+
+
+class DeleteBatchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Batch
+        fields = ['id']

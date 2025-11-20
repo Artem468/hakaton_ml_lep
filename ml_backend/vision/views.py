@@ -10,6 +10,7 @@ from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from ultralytics import YOLO
 
 from .filters import BatchFilter
 from .models import AiModel, Batch, LepImage
@@ -18,10 +19,10 @@ from .serializers import (
     BatchListSerializer,
     LepImageSerializer,
     InitUploadSerializer,
-    ConfirmUploadSerializer, BatchStatusSerializer,
+    ConfirmUploadSerializer, BatchStatusSerializer, DeleteBatchSerializer,
 )
-from .utils import make_file_key
 from .tasks import process_image_task
+from .utils import make_file_key
 
 
 @extend_schema(
@@ -87,9 +88,12 @@ class BatchDetailPagination(PageNumberPagination):
     responses={200: LepImageSerializer(many=True)},
 )
 class BatchDetailView(generics.ListAPIView):
-    queryset = LepImage.objects.all()
     serializer_class = LepImageSerializer
     pagination_class = BatchDetailPagination
+
+    def get_queryset(self):
+        batch_id = self.kwargs.get('pk')
+        return LepImage.objects.filter(batch_id=batch_id)
 
     @extend_schema(operation_id="batch_detail")
     def get(self, request, *args, **kwargs):
@@ -216,6 +220,8 @@ class ConfirmUploadAPIView(APIView):
             )
 
         s3 = settings.S3_CLIENT_PRIVATE
+        model_obj = AiModel.objects.get(id=model_id)
+        model = YOLO(model_obj.model_file.path)
         confirmed_count = 0
         for image in batch.lepimage_set.all():
             try:
@@ -223,7 +229,7 @@ class ConfirmUploadAPIView(APIView):
                     Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=image.file_key
                 )
                 confirmed_count += 1
-                process_image_task.delay(image.file_key, model_id)
+                process_image_task.delay(image.file_key, model)
             except s3.exceptions.ClientError:
                 continue
 
@@ -263,3 +269,11 @@ class BatchImagesStatsView(APIView):
         }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["Обработка и отдача фото"],
+    summary="Удаление набора фото",
+    description="Удаляет набор фото и файлы из бакета"
+)
+class BatchDeleteView(generics.DestroyAPIView):
+    queryset = Batch.objects.all()
+    serializer_class = DeleteBatchSerializer

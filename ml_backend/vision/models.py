@@ -23,7 +23,7 @@ class Batch(models.Model):
     status = models.BooleanField(default=False, verbose_name="Просмотрено")
 
     def __str__(self):
-        return self.name
+        return self.name or '---'
 
     class Meta:
         ordering = ["-uploaded_at"]
