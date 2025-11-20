@@ -86,7 +86,7 @@ class BatchDetailPagination(PageNumberPagination):
     ],
     responses={200: LepImageSerializer(many=True)},
 )
-class BatchDetailView(generics.RetrieveAPIView):
+class BatchDetailView(generics.ListAPIView):
     queryset = LepImage.objects.all()
     serializer_class = LepImageSerializer
     pagination_class = BatchDetailPagination
