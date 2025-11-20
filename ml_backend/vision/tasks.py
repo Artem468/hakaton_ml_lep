@@ -1,0 +1,59 @@
+from io import BytesIO
+from PIL import Image
+from celery import shared_task
+from django.conf import settings
+from .models import LepImage, AiModel
+from ultralytics import YOLO
+
+s3_client = settings.S3_CLIENT_PRIVATE
+
+@shared_task
+def process_image_task(file_key: str, model_id: int):
+    image_obj = LepImage.objects.get(file_key=file_key)
+    model_obj = AiModel.objects.get(id=model_id)
+
+    bucket = settings.AWS_STORAGE_BUCKET_NAME
+    obj = s3_client.get_object(Bucket=bucket, Key=file_key)
+    img_data = obj['Body'].read()
+    image = Image.open(BytesIO(img_data))
+
+    model = YOLO(model_obj.model_file.path)
+    results = model.predict(image, imgsz=640, conf=0.25, save=False)
+    r = results[0]
+
+    detections = []
+    labels = r.boxes.cls.cpu().numpy()
+    scores = r.boxes.conf.cpu().numpy()
+    boxes  = r.boxes.xyxy.cpu().numpy()
+
+    for cls, conf, box in zip(labels, scores, boxes):
+        detections.append({
+            "class": model.names[int(cls)],
+            "confidence": float(conf),
+            "bbox": box.tolist()
+        })
+
+    preview = image.copy()
+    preview.thumbnail((512, 512))
+    preview_bytes = BytesIO()
+    preview_format = image.format if image.format else "JPEG"
+    preview.save(preview_bytes, format=preview_format)
+    preview_bytes.seek(0)
+
+    preview_key = file_key.replace("uploads", "previews")
+    s3_client.put_object(
+        Bucket=bucket,
+        Key=preview_key,
+        Body=preview_bytes,
+        ContentType=f"image/{preview_format.lower()}",
+        ACL="public-read",
+    )
+
+    image_obj.detection_result = detections
+    image_obj.save()
+
+    return {
+        "file_key": file_key,
+        "preview_key": preview_key,
+        "detections": detections
+    }

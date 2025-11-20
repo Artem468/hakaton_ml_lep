@@ -1,0 +1,136 @@
+services:
+  lep-db:
+    image: postgres:15
+    env_file: .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    restart: always
+    networks:
+      - app-network
+
+  lep-django:
+    build:
+      context: ./ml_backend
+      dockerfile: Dockerfile
+    container_name: lep-django
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput --clear &&
+             python manage.py initadmin &&
+             gunicorn ml_backend.wsgi:application --bind 0.0.0.0:8000 --workers 3"
+    working_dir: /app
+    volumes:
+      - ./ml_backend:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
+    expose:
+      - "8000"
+    env_file: .env
+    depends_on:
+      - lep-db
+      - rabbitmq
+      - minio
+    restart: always
+    networks:
+      - app-network
+
+  rabbitmq:
+    container_name: rabbitmq_broker
+    image: rabbitmq:3-management-alpine
+    env_file: .env
+    expose:
+      - "5672"
+    ports:
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: always
+    networks:
+      - app-network
+
+  celery:
+    container_name: celery_worker
+    build:
+      context: ./ml_backend
+      dockerfile: Dockerfile
+    command: celery -A ml_backend worker --loglevel=INFO
+    volumes:
+      - ./ml_backend:/app
+    env_file: .env
+    depends_on:
+      - lep-django
+      - rabbitmq
+      - minio
+    restart: always
+    networks:
+      - app-network
+
+  celery_beat:
+    container_name: celery_beat
+    build:
+      context: ./ml_backend
+      dockerfile: Dockerfile
+    command: celery -A ml_backend beat --loglevel=INFO
+    volumes:
+      - ./ml_backend:/app
+    env_file: .env
+    depends_on:
+      - lep-django
+      - rabbitmq
+      - minio
+    restart: always
+    networks:
+      - app-network
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    env_file: .env
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - app-network
+
+  redis:
+    container_name: redis_cache
+    image: redis:7-alpine
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  lep-nginx:
+    image: nginx:1.27-alpine
+    container_name: lep-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/static
+      - media_volume:/app/media
+    depends_on:
+      - lep-django
+      - minio
+    restart: always
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+  static_volume:
+  media_volume:
+  rabbitmq_data:
+  minio_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
