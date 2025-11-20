@@ -1,15 +1,14 @@
 "use client";
 
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useRef} from "react";
 import {withAuth} from "@/app/hoc/withAuth";
-import {apiFetch} from "@/app/lib/api";
-import {FiEye, FiUpload, FiPlus} from "react-icons/fi";
+import {apiFetch} from "@/app/api/api";
+import {FiEye, FiUpload, FiPlus, FiTrash2} from "react-icons/fi";
 import * as exifr from "exifr";
-import Link from "next/link";
 import toast from "react-hot-toast";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
-import logo from "@/app/assets/logo.svg";
+import Header from "@/app/component/Header";
 
 interface UploadedFile {
     id: string;
@@ -28,48 +27,23 @@ interface InitBatchResponse {
     }[];
 }
 
-interface User {
-    id: number;
-    email: string;
-    first_name: string;
-    last_name: string;
-}
-
 function LoadImage() {
     const [projectName, setProjectName] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
     const [uploadStage, setUploadStage] = useState<"idle" | "uploading" | "confirming">("idle");
-
     const [globalProgress, setGlobalProgress] = useState(0);
+    const [currentFileIndex, setCurrentFileIndex] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [currentUser, setCurrentUser] = useState<User | null>(null);
-
-    useEffect(() => {
-        try {
-            const userStr = localStorage.getItem("user");
-            if (userStr) {
-                const user: User = JSON.parse(userStr);
-                setCurrentUser(user);
-            }
-        } catch {
-        }
-    }, []);
-
-    const recalcGlobalProgress = (next: Record<string, number>) => {
-        const values = Object.values(next);
-        if (values.length === 0) return 0;
-        const avg = values.reduce((a, b) => a + b, 0) / values.length;
-        return Math.min(100, Math.round(avg));
-    };
+    const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+    const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
 
     const handleFiles = async (selectedFiles: FileList) => {
         const newFiles: UploadedFile[] = [];
 
         for (const file of Array.from(selectedFiles)) {
             if (!file.type.startsWith("image/")) continue;
-            if (files.length + newFiles.length >= 100) break;
 
             const preview = URL.createObjectURL(file);
             let latitude = "0";
@@ -104,14 +78,70 @@ function LoadImage() {
         }
     };
 
+    const handleImageClick = (fileId: string, index: number, event: React.MouseEvent) => {
+        const newSelected = new Set(selectedFiles);
+
+        if (event.shiftKey && lastSelectedIndex !== null) {
+            const start = Math.min(lastSelectedIndex, index);
+            const end = Math.max(lastSelectedIndex, index);
+
+            for (let i = start; i <= end; i++) {
+                newSelected.add(files[i].id);
+            }
+        } else if (event.ctrlKey || event.metaKey) {
+            if (newSelected.has(fileId)) {
+                newSelected.delete(fileId);
+            } else {
+                newSelected.add(fileId);
+            }
+        } else {
+            newSelected.clear();
+            newSelected.add(fileId);
+        }
+
+        setSelectedFiles(newSelected);
+        setLastSelectedIndex(index);
+    };
+
     const removeFile = (fileName: string) => {
         setFiles((prev) => prev.filter((f) => f.file.name !== fileName));
         setUploadProgress((prev) => {
             const copy = {...prev};
             delete copy[fileName];
-            setGlobalProgress(recalcGlobalProgress(copy));
             return copy;
         });
+    };
+
+    const removeSelectedFiles = () => {
+        if (selectedFiles.size === 0) {
+            toast.error("Выберите фотографии для удаления");
+            return;
+        }
+
+        const filesToRemove = files.filter((f) => selectedFiles.has(f.id));
+        filesToRemove.forEach((f) => URL.revokeObjectURL(f.preview));
+
+        setFiles((prev) => prev.filter((f) => !selectedFiles.has(f.id)));
+        setSelectedFiles(new Set());
+        setLastSelectedIndex(null);
+        toast.success(`Удалено фотографий: ${filesToRemove.length}`);
+    };
+
+    const removeAllFiles = () => {
+        files.forEach((f) => URL.revokeObjectURL(f.preview));
+        setFiles([]);
+        setUploadProgress({});
+        setGlobalProgress(0);
+        setSelectedFiles(new Set());
+        setLastSelectedIndex(null);
+    };
+
+    const selectAll = () => {
+        if (selectedFiles.size === files.length) {
+            setSelectedFiles(new Set());
+        } else {
+            setSelectedFiles(new Set(files.map((f) => f.id)));
+        }
     };
 
     const handleUpload = async () => {
@@ -123,6 +153,7 @@ function LoadImage() {
 
         setIsUploading(true);
         setUploadStage("uploading");
+        setCurrentFileIndex(0);
 
         try {
             const initRes = await apiFetch<InitBatchResponse>("vision/batches/init/", {
@@ -139,11 +170,10 @@ function LoadImage() {
 
             const batchId = initRes.batch_id;
             const uploadFiles = initRes.files;
-
-            setUploadProgress({});
-            setGlobalProgress(0);
+            const totalFiles = files.length;
 
             for (let i = 0; i < files.length; i++) {
+                setCurrentFileIndex(i + 1);
                 const file = files[i];
                 const uploadInfo = uploadFiles[i];
                 const uploadUrl = uploadInfo.upload_url;
@@ -154,32 +184,37 @@ function LoadImage() {
 
                     xhr.upload.onprogress = (event) => {
                         if (event.lengthComputable) {
-                            const percent = Math.round((event.loaded * 100) / event.total);
-                            setUploadProgress((prev) => {
-                                const next = {...prev, [file.file.name]: percent};
-                                setGlobalProgress(recalcGlobalProgress(next));
-                                return next;
-                            });
+                            const filePercent = Math.round((event.loaded * 100) / event.total);
+                            setUploadProgress((prev) => ({
+                                ...prev,
+                                [file.file.name]: filePercent
+                            }));
+
+                            const completedFiles = i;
+                            const currentFileProgress = filePercent / 100;
+                            const overallProgress = ((completedFiles + currentFileProgress) / totalFiles) * 100;
+                            setGlobalProgress(Math.round(overallProgress));
                         }
                     };
 
                     xhr.onload = () => {
                         if (xhr.status >= 200 && xhr.status < 300) {
+                            setUploadProgress((prev) => ({
+                                ...prev,
+                                [file.file.name]: 100
+                            }));
                             resolve();
                         } else {
                             reject(new Error(`Ошибка загрузки: ${xhr.status}`));
                         }
                     };
 
-                    xhr.onerror = () => {
-                        reject(new Error("Ошибка сети при загрузке файла"));
-                    };
-
+                    xhr.onerror = () => reject(new Error("Ошибка сети при загрузке файла"));
                     xhr.send(file.file);
                 });
             }
 
-
+            setGlobalProgress(100);
             setUploadStage("confirming");
 
             await apiFetch("vision/batches/confirm/", {
@@ -188,12 +223,13 @@ function LoadImage() {
             });
 
             setUploadStage("idle");
-
             toast.success("Проект успешно загружен и отправлен на анализ!");
             setFiles([]);
             setUploadProgress({});
             setProjectName("");
             setGlobalProgress(0);
+            setCurrentFileIndex(0);
+            setSelectedFiles(new Set());
         } catch (error) {
             console.error("Ошибка при загрузке проекта:", error);
             toast.error("Ошибка при загрузке проекта");
@@ -203,60 +239,26 @@ function LoadImage() {
     };
 
     return (
-
-
-
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
-        <Image
-            src={backImage}
-            alt=""
-            className="absolute right-0 z-0 size-96 bottom-0"
-            />
             <Image
-            src={logo}
-            alt=""
-            className="absolute left-4 z-0 size-16 top-4"
+                src={backImage}
+                alt=""
+                className="absolute right-0 z-0 size-96 bottom-0"
             />
-            <header className="flex justify-end items-center w-full bg-[#11111A] py-8 p-4 border-b border-gray-200 mb-6">
-                <div className="text-[#CACACA] w-9/12 flex justify-center gap-15">
-                    <Link href="/loadimage">Создать проект</Link>
-                    <Link href="/allproject">Все проекты</Link>
-                    <Link href="/stats">Статистика</Link>
-                </div>
+            <Header/>
 
-                <Link href={"/profile"}>
-                    <div className="flex items-center gap-3">
-                        {currentUser ? (
-                            <>
-
-              <span className="text-sm font-medium text-[#CACACA]">
-                {currentUser.first_name} {currentUser.last_name}
-              </span>
-                                <div
-                                    className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                                    {currentUser.first_name[0]}
-                                    {currentUser.last_name[0]}
-                                </div>
-                            </>
-                        ) : (
-                            <span className="text-gray-500 text-sm">Загрузка...</span>
-                        )}
-                    </div>
-                </Link>
-            </header>
-
-            <div className="w-4/5 z-20 bg-[#1A1A25]">
+            <div className="w-4/5 z-20 mt-6 bg-[#1A1A25]">
                 <div className="bg-[#1A1A25] p-6 rounded-2xl mb-6">
-                   <div>
+                    <div>
                         <h1 className="text-2xl font-bold text-[#119BD7] mb-6">Создать проект</h1>
-                   </div>
+                    </div>
 
                     <input
                         type="text"
                         placeholder="Введите название проекта"
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2 "
+                        className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2"
                     />
 
                     <div
@@ -266,31 +268,64 @@ function LoadImage() {
                     >
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="font-semibold text-[#119BD7]">Загруженные фото</h2>
-                            <button
-                                type="button"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="w-8 h-8 border-1 border-[#119BD7] text-[#119BD7] rounded-full flex items-center justify-center  transition-colors"
-                            >
-                                <FiPlus size={16}/>
-                            </button>
+                            <div className="flex gap-2">
+                                {files.length > 0 && !isUploading && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={selectAll}
+                                            className="px-3 py-1.5 border border-[#119BD7] text-[#119BD7] rounded-full hover:bg-[#119BD7] hover:text-white transition-colors text-sm"
+                                        >
+                                            {selectedFiles.size === files.length ? "Снять выделение" : "Выбрать все"}
+                                        </button>
+                                        {selectedFiles.size > 0 && (
+                                            <button
+                                                type="button"
+                                                onClick={removeSelectedFiles}
+                                                className="px-3 py-1.5 border border-red-500 text-red-500 rounded-full flex items-center gap-2 hover:bg-red-500 hover:text-white transition-colors text-sm"
+                                            >
+                                                <FiTrash2 size={14}/>
+                                                <span>Удалить выбранные ({selectedFiles.size})</span>
+                                            </button>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={removeAllFiles}
+                                            className="px-3 py-1.5 border border-red-500 text-red-500 rounded-full flex items-center gap-2 hover:bg-red-500 hover:text-white transition-colors text-sm"
+                                        >
+                                            <FiTrash2 size={14}/>
+                                            <span>Удалить все</span>
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-8 h-8 border-1 border-[#119BD7] text-[#119BD7] rounded-full flex items-center justify-center transition-colors"
+                                >
+                                    <FiPlus size={16}/>
+                                </button>
+                            </div>
                         </div>
 
                         {files.length === 0 && !isUploading && (
                             <div
                                 className="border-dashed border-2 border-[#119BD7] rounded-lg p-8 text-center cursor-pointer hover:border-[#119BD7] transition-colors">
                                 <div
-                                    className="w-12 h-12  border-[#119BD7] bg-blue-300 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <FiUpload size={24} className="text-[#119BD7] "/>
+                                    className="w-12 h-12 border-[#119BD7] bg-blue-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FiUpload size={24} className="text-[#119BD7]"/>
                                 </div>
                                 <p className="text-[#119BD7] font-medium mb-1">Выберите фотографии</p>
                                 <p className="text-gray-500 text-sm mb-1">или перетащите в область</p>
-                                <p className="text-gray-400 text-xs">максимум 100 фотографий*</p>
+                                <p className="text-gray-400 text-xs">неограниченное количество фотографий</p>
                             </div>
                         )}
 
                         {uploadStage === "uploading" && (
                             <div className="border-dashed border-2 border-[#119BD7] rounded-lg p-8 text-center">
-                                <p className="text-[#119BD7] font-medium mb-1">Загрузка файлов...</p>
+                                <p className="text-[#119BD7] font-medium mb-1">
+                                    Загрузка файлов... ({currentFileIndex} из {files.length})
+                                </p>
                                 <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                                     <div
                                         className="bg-[#119BD7] h-2 rounded-full transition-all duration-300"
@@ -301,24 +336,61 @@ function LoadImage() {
                             </div>
                         )}
 
+                        {uploadStage === "confirming" && (
+                            <div className="border-dashed border-2 border-[#119BD7] rounded-lg p-8 text-center">
+                                <p className="text-[#119BD7] font-medium mb-1">Подтверждение загрузки...</p>
+                                <div className="mt-4 flex justify-center">
+                                    <div
+                                        className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
+                                </div>
+                            </div>
+                        )}
+
                         {files.length > 0 && !isUploading && (
                             <div className="mb-4">
-                                <p className="text-sm text-gray-500 mb-2">Загружено: {files.length} фото</p>
+                                <p className="text-sm text-gray-500 mb-2">
+                                    Загружено: {files.length} фото
+                                    {selectedFiles.size > 0 && ` | Выбрано: ${selectedFiles.size}`}
+                                </p>
+                                <p className="text-xs text-gray-400 mb-3">
+                                    Совет: Удерживайте Shift для выбора диапазона, Ctrl/Cmd для множественного выбора
+                                </p>
                                 <div
                                     className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-2 auto-rows-[minmax(100px,auto)]">
                                     {files.map((f, index) => (
                                         <div
                                             key={f.id}
-                                            className="relative group overflow-hidden rounded border border-gray-200 bg-white flex items-center justify-center w-full aspect-square"
+                                            onClick={(e) => handleImageClick(f.id, index, e)}
+                                            className={`relative group overflow-hidden rounded border cursor-pointer w-full aspect-square transition-all ${
+                                                selectedFiles.has(f.id)
+                                                    ? "border-[#119BD7] ring-2 ring-[#119BD7] scale-95"
+                                                    : "border-gray-200 hover:border-[#119BD7]"
+                                            }`}
                                         >
                                             <img
                                                 src={f.preview}
-                                                className="w-full h-full object-cover cursor-pointer hover:scale-105 transition-transform"
+                                                className="w-full h-full object-cover hover:scale-105 transition-transform"
                                                 alt={`Preview ${index + 1}`}
                                             />
+                                            {selectedFiles.has(f.id) && (
+                                                <div className="absolute bottom-1 left-1 z-10">
+                                                    <div
+                                                        className="w-7 h-7 bg-[#119BD7] rounded-full flex items-center justify-center shadow-xl border-2 border-white">
+                                                        <svg className="w-4 h-4 text-white" fill="none"
+                                                             stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round"
+                                                                  strokeWidth={3} d="M5 13l4 4L19 7"/>
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            )}
+
 
                                             <button
-                                                onClick={() => removeFile(f.file.name)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    removeFile(f.file.name);
+                                                }}
                                                 className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                             >
                                                 ×
@@ -336,7 +408,7 @@ function LoadImage() {
                                 className={`px-6 py-2 rounded-full border border-[#119BD7] text-[#119BD7] font-medium flex items-center gap-2 ${
                                     isUploading || files.length === 0
                                         ? "opacity-50 cursor-not-allowed"
-                                        : " transition-colors"
+                                        : "transition-colors"
                                 }`}
                             >
                                 <span>Запустить анализ</span>

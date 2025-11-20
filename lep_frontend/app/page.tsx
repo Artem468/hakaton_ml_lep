@@ -1,7 +1,7 @@
 'use client'
 import {useState} from "react";
 import {useRouter} from "next/navigation";
-import {useAuth} from "@/app/lib/AuthContext";
+import {useAuth} from "@/app/api/AuthContext";
 import {FiEye, FiEyeOff} from "react-icons/fi";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg"

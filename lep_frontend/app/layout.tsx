@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
-import {AuthProvider} from "@/app/lib/AuthContext";
+import {AuthProvider} from "@/app/api/AuthContext";
 import {Toaster} from 'react-hot-toast';
 
 
@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "lep ml",
+    title: "Digital vision",
     description: "ml",
      icons: {
         icon: "/logo.svg",

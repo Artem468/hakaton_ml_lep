@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, ComponentType, FC } from "react";
-import { useAuth } from "@/app/lib/AuthContext";
+import { useAuth } from "@/app/api/AuthContext";
 
 export function withAuth<P extends object>(WrappedComponent: ComponentType<P>): FC<P> {
   const ComponentWithAuth: FC<P> = (props) => {
