@@ -3,7 +3,9 @@ import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {useAuth} from "@/app/lib/AuthContext";
 import {FiEye, FiEyeOff} from "react-icons/fi";
-
+import Image from "next/image";
+import backImage from "@/app/assets/backimage.svg"
+import logo from "@/app/assets/logo.svg"
 export default function LoginPage() {
     const {login} = useAuth();
     const router = useRouter();
@@ -24,15 +26,25 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen w-full bg-[#EEEEEE] flex justify-center items-center p-4">
+        <div className="min-h-screen w-full bg-[#11111A] flex justify-center items-center p-4">
+            <Image
+            src={backImage}
+            alt=""
+            className="absolute right-0 z-0 size-96 bottom-0"
+            />
+            <Image
+            src={logo}
+            alt=""
+            className="absolute left-4 z-0 size-16 top-4"
+            />
             <form
                 onSubmit={handleSubmit}
-                className="bg-white w-5/6 p-4 max-w-md gap-5 flex flex-col items-center rounded-lg p-6 shadow-lg"
+                className="bg-[#1A1A25] w-5/6 p-6 z-20 max-w-md gap-5 flex flex-col items-center rounded-lg"
             >
-                <p className="text-2xl w-full font-bold text-[#FF8D28] text-center">Добро пожаловать</p>
+                <p className="text-2xl w-full font-bold text-[#119BD7] text-center">Добро пожаловать</p>
 
                 <input
-                    className="p-2 w-full border border-[#BDBDBD] rounded-md"
+                    className="p-2 w-full border border-[#BDBDBD] text-[#BDBDBD] rounded-md"
                     type="text"
                     placeholder="Почта"
                     value={email}
@@ -41,14 +53,14 @@ export default function LoginPage() {
 
                 <div className="relative w-full">
                     <input
-                        className="p-2 w-full border border-[#BDBDBD] rounded-md"
+                        className="p-2 w-full border border-[#BDBDBD] text-[#BDBDBD] rounded-md"
                         type={showPassword ? "text" : "password"}
                         placeholder="Пароль"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                     />
                     <span
-                        className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer"
+                        className="absolute right-2 top-1/2 text-[#BDBDBD] -translate-y-1/2 cursor-pointer"
                         onClick={() => setShowPassword(!showPassword)}
                     >
                         {showPassword ? <FiEyeOff size={20}/> : <FiEye size={20}/>}
@@ -61,17 +73,17 @@ export default function LoginPage() {
                         id="rememberMe"
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        className={`appearance-none w-5 h-5 border-2 border-gray-400 rounded-full 
-                            checked:bg-[#FF8D28] cursor-pointer transition`}
+                        className={`appearance-none w-5 h-5 border-2 border-gray-400 rounded-full text-[#BDBDBD] 
+                            checked:bg-[#119BD7] cursor-pointer transition`}
                     />
-                    <label htmlFor="rememberMe" className="text-sm select-none">
+                    <label htmlFor="rememberMe" className="text-[#BDBDBD] text-sm select-none">
                         Запомнить меня
                     </label>
                 </div>
 
                 {error && <p className="text-red-500">{error}</p>}
 
-                <button className="bg-[#FF8D28] w-full py-2 text-white rounded-full transition" type="submit">
+                <button className="bg-[#119BD7] w-full py-2 text-white rounded-full transition" type="submit">
                     Войти
                 </button>
             </form>
