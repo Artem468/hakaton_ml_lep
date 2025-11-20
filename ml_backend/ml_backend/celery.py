@@ -6,9 +6,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ml_backend.settings')
 app = Celery('ml_backend')
 
 app.conf.update(
-    task_routes={
-        'dispatcher.tasks.dispatch_request': {'queue': 'dispatch_queue'},
-    },
     task_acks_late=True,
     task_reject_on_worker_lost=True,
     task_serializer='json',
