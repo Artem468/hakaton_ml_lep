@@ -19,7 +19,7 @@ from .serializers import (
     BatchListSerializer,
     LepImageSerializer,
     InitUploadSerializer,
-    ConfirmUploadSerializer, BatchStatusSerializer, DeleteBatchSerializer,
+    ConfirmUploadSerializer, BatchStatusSerializer, DeleteBatchSerializer, DeleteImageSerializer,
 )
 from .tasks import process_image_task
 from .utils import make_file_key
@@ -272,8 +272,20 @@ class BatchImagesStatsView(APIView):
 @extend_schema(
     tags=["Обработка и отдача фото"],
     summary="Удаление набора фото",
-    description="Удаляет набор фото и файлы из бакета"
+    description="Удаляет набор фото и файлы из бакета",
+    responses={204: None}
 )
 class BatchDeleteView(generics.DestroyAPIView):
     queryset = Batch.objects.all()
     serializer_class = DeleteBatchSerializer
+
+
+@extend_schema(
+    tags=["Обработка и отдача фото"],
+    summary="Удалить конкретное изображение",
+    description="Удаляет конкретное фото и файлы из бакета",
+    responses={204: None}
+)
+class ImageDeleteView(generics.DestroyAPIView):
+    queryset = LepImage.objects.all()
+    serializer_class = DeleteImageSerializer

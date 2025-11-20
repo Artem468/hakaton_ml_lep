@@ -16,17 +16,10 @@ class BatchListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Batch
-        fields = ("id", "name", "uploaded_at", "photo_count", "detection_results", "processing_status",)
+        fields = ("id", "name", "uploaded_at", "photo_count", "processing_status",)
 
     def get_photo_count(self, obj) -> int:
         return obj.lepimage_set.count()
-
-    def get_detection_results(self, obj) -> list:
-        return [
-            img.detection_result
-            for img in obj.lepimage_set.all()
-            if img.detection_result
-        ]
 
     def get_processing_status(self, obj) -> str:
         if obj.status:
@@ -148,4 +141,10 @@ class BatchStatusSerializer(serializers.ModelSerializer):
 class DeleteBatchSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batch
+        fields = ['id']
+
+
+class DeleteImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LepImage
         fields = ['id']

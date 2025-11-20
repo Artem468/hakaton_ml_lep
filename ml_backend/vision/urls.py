@@ -7,7 +7,7 @@ from .views import (
     InitUploadAPIView,
     ConfirmUploadAPIView,
     BatchStatusView,
-    BatchImagesStatsView, BatchDeleteView,
+    BatchImagesStatsView, BatchDeleteView, ImageDeleteView,
 )
 
 urlpatterns = [
@@ -19,5 +19,6 @@ urlpatterns = [
     path("batches/status/<int:pk>/", BatchStatusView.as_view(), name="batch-status"),
     path("batches/stats/", BatchImagesStatsView.as_view(), name="batch-stats"),
     path('batches/delete/<int:pk>/', BatchDeleteView.as_view(), name='delete-batch'),
+    path('images/delete/<int:pk>/', ImageDeleteView.as_view(), name='delete-image')
 
 ]
