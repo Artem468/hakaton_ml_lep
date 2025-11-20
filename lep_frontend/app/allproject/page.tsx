@@ -1,10 +1,13 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import React, {useState, useEffect} from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import {apiFetch} from "@/app/lib/api";
 import {VscSettings} from "react-icons/vsc";
+import Image from "next/image";
+import backImage from "@/app/assets/backimage.svg";
+import logo from "@/app/assets/logo.svg";
 
 interface User {
     id: number;
@@ -28,7 +31,7 @@ interface DetectionResult {
 interface Project {
     id: number;
     name: string;
-    uploaded_at: string; // API использует uploaded_at вместо created_at
+    uploaded_at: string;
     photo_count: number;
     detection_results: DetectionResult[];
 }
@@ -103,19 +106,37 @@ export default function AllProject() {
     };
 
     const displayDateRange = dateRange
-    ? `${formatDate(dateRange.start!)} - ${formatDate(dateRange.end!)}`
-    : "Все время";
+        ? `${formatDate(dateRange.start!)} - ${formatDate(dateRange.end!)}`
+        : "Все время";
 
     return (
-        <div className="w-full mx-auto bg-gray-100 min-h-screen flex flex-col items-center">
-            <header className="flex justify-end items-center w-full bg-white p-4 border-b border-gray-200 mb-6">
+        <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
+            <Image
+                src={backImage}
+                alt=""
+                className="absolute right-0 z-0 size-96 bottom-0"
+            />
+            <Image
+                src={logo}
+                alt=""
+                className="absolute left-4 z-0 size-16 top-4"
+            />
+            <header
+                className="flex justify-end items-center w-full bg-[#11111A] py-8 p-4 border-b border-gray-200 mb-6">
+                <div className="text-[#CACACA] w-9/12 flex justify-center gap-15">
+                    <Link href="/loadimage">Создать проект</Link>
+                    <Link href="/allproject">Все проекты</Link>
+                    <Link href="/stats">Статистика</Link>
+                </div>
+
                 <Link href={"/profile"}>
                     <div className="flex items-center gap-3">
                         {currentUser ? (
                             <>
-                                <span className="text-sm font-medium text-gray-700">
-                                    {currentUser.first_name} {currentUser.last_name}
-                                </span>
+
+              <span className="text-sm font-medium text-[#CACACA]">
+                {currentUser.first_name} {currentUser.last_name}
+              </span>
                                 <div
                                     className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                                     {currentUser.first_name[0]}
@@ -129,49 +150,49 @@ export default function AllProject() {
                 </Link>
             </header>
 
-            <div className="w-4/5">
+            <div className="w-4/5 z-20">
                 <div className=" p-6 rounded-lg ">
-                    <div className="bg-white p-6 rounded-lg mb-6">
+                    <div className="bg-[#1A1A25] p-6 rounded-lg mb-6">
                         <div className="text-sm text-gray-500 mb-2">
                             <Link href={"/loadimage"}>Главная</Link> / Все проекты
                         </div>
-                        <h1 className="text-2xl font-bold text-orange-500">Все проекты</h1>
+                        <h1 className="text-2xl font-bold text-[#119BD7]">Все проекты</h1>
                     </div>
-                    <div className="bg-white p-6 rounded-lg items-center gap-5 flex flex-col mb-6 relative">
+                    <div className="bg-[#1A1A25] p-6 rounded-lg items-center gap-5 flex flex-col mb-6 relative">
                         <button
                             onClick={() => setShowDateRangePicker(!showDateRangePicker)}
                             className="flex items-center gap-2 w-full justify-center"
                         >
-                            <VscSettings size={36} className="text-orange-500"/>
+                            <VscSettings size={36} className="text-[#119BD7]"/>
                             <div
-                                className="w-11/12 flex justify-center p-2 rounded-3xl text-orange-500 font-s bg-orange-100">
+                                className="w-11/12 flex justify-center p-2 rounded-3xl text-[#119BD7]    font-s bg-[rgb(17,155,215,33%)]">
                                 {displayDateRange}
                             </div>
                         </button>
 
                         {showDateRangePicker && (
                             <div
-                                className="w-11/12 mt-4 p-4 bg-white rounded-lg border border-gray-200 flex flex-col space-y-4 transition-all">
+                                className="w-11/12 mt-4 p-4  rounded-lg border border-gray-200 flex flex-col space-y-4 transition-all">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-[#CACACA]  mb-1">
                                         Начальная дата
                                     </label>
                                     <input
                                         type="date"
                                         value={dateRange?.start}
                                         onChange={(e) => handleDateChange('start', e.target.value)}
-                                        className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        className="border border-gray-300 text- rounded-md px-3 py-2 text-sm w-full text-[#CACACA]  focus:outline-none focus:ring-2 focus:ring-[#119BD7] focus:border-[#119BD7]"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    <label className="block text-sm font-medium text-[#CACACA]  mb-1">
                                         Конечная дата
                                     </label>
                                     <input
                                         type="date"
                                         value={dateRange?.end}
                                         onChange={(e) => handleDateChange('end', e.target.value)}
-                                        className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                        className="border border-gray-300 text- rounded-md px-3 py-2 text-sm w-full text-[#CACACA]  focus:outline-none focus:ring-2 focus:ring-[#119BD7] focus:border-[#119BD7]"
                                     />
                                 </div>
                                 <div className="flex justify-end space-x-2 pt-2">
@@ -186,7 +207,7 @@ export default function AllProject() {
                                             fetchProjects();
                                             setShowDateRangePicker(false);
                                         }}
-                                        className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-md hover:bg-orange-600"
+                                        className="px-4 py-2 text-[#119BD7] font-s bg-[rgb(17,155,215,33%)] text-sm font-medium rounded-md "
                                     >
                                         Применить
                                     </button>
@@ -196,35 +217,39 @@ export default function AllProject() {
                     </div>
 
 
-                    <div className="bg-white rounded-lg overflow-hidden">
+                    <div className="bg-[#1A1A25] rounded-lg z-20 overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
+                            <table className="min-w-full divide-y divide-[#1A1A25]">
+                                <thead className="bg-[#1A1A25]">
                                 <tr>
                                     <th scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
                                         №
                                     </th>
                                     <th scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
                                         Название
                                     </th>
                                     <th scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7]  uppercase tracking-wider">
                                         Кол-во фото
                                     </th>
                                     <th scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7]  uppercase tracking-wider">
                                         Дата создания
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7]  uppercase tracking-wider">
+                                        Статус
                                     </th>
 
                                     <th scope="col"
-                                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7]  uppercase tracking-wider">
 
                                     </th>
                                 </tr>
                                 </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
+                                <tbody className="bg-[#1A1A25] divide-y">
                                 {loading ? (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
@@ -239,14 +264,14 @@ export default function AllProject() {
                                     </tr>
                                 ) : (
                                     projects.map((project, index) => (
-                                        <tr key={project.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        <tr key={project.id} className="hover:bg-[#29293D]">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
                                                 {String(index + 1).padStart(2, '0')}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div>
                                                     <div
-                                                        className="text-sm font-bold  text-gray-900">{project.name}</div>
+                                                        className="text-sm font-bold  text-white">{project.name}</div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -255,11 +280,15 @@ export default function AllProject() {
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 {formatDate(project.uploaded_at)}
                                             </td>
+                                            <td className="px-6 py-4 whitespace-nowrap flex justify-start text-sm text-white">
+                                                <p className="p-2 rounded-2xl bg-[#119BD7] flex justify-center">
+                                                    статус
+                                                </p>
+                                            </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <Link
-                                                    href={`/project/${project.id}`}
-                                                    className="text-orange-600 hover:text-orange-900"
-                                                >
+                                                    href={`/batch/${project.id}?name=${encodeURIComponent(project.name)}`}
+                                                    className="text-[#CACACA]">
                                                     Подробнее
                                                 </Link>
                                             </td>
@@ -274,7 +303,7 @@ export default function AllProject() {
                     <div className="mt-6">
                         <Link
                             href="/loadimage"
-                            className="inline-flex items-center px-6 py-2 border border-orange-400 text-orange-500 rounded-full font-medium hover:bg-orange-50 transition-colors"
+                            className="inline-flex items-center px-6 py-2 border border-[#119BD7] text-[#119BD7] rounded-full font-medium hover:bg-blue-900 transition-colors"
                         >
                             Создать проект
                         </Link>

@@ -7,6 +7,9 @@ import {FiEye, FiUpload, FiPlus} from "react-icons/fi";
 import * as exifr from "exifr";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import Image from "next/image";
+import backImage from "@/app/assets/backimage.svg";
+import logo from "@/app/assets/logo.svg";
 
 interface UploadedFile {
     id: string;
@@ -200,13 +203,33 @@ function LoadImage() {
     };
 
     return (
-        <div className="w-full mx-auto bg-gray-100 min-h-screen flex flex-col items-center">
-            <header className="flex justify-end items-center w-full bg-white p-4 border-b border-gray-200 mb-6">
+
+
+
+        <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
+        <Image
+            src={backImage}
+            alt=""
+            className="absolute right-0 z-0 size-96 bottom-0"
+            />
+            <Image
+            src={logo}
+            alt=""
+            className="absolute left-4 z-0 size-16 top-4"
+            />
+            <header className="flex justify-end items-center w-full bg-[#11111A] py-8 p-4 border-b border-gray-200 mb-6">
+                <div className="text-[#CACACA] w-9/12 flex justify-center gap-15">
+                    <Link href="/loadimage">Создать проект</Link>
+                    <Link href="/allproject">Все проекты</Link>
+                    <Link href="/stats">Статистика</Link>
+                </div>
+
                 <Link href={"/profile"}>
                     <div className="flex items-center gap-3">
                         {currentUser ? (
                             <>
-              <span className="text-sm font-medium text-gray-700">
+
+              <span className="text-sm font-medium text-[#CACACA]">
                 {currentUser.first_name} {currentUser.last_name}
               </span>
                                 <div
@@ -222,32 +245,31 @@ function LoadImage() {
                 </Link>
             </header>
 
-            <div className="w-4/5">
-                <div className="bg-white p-6 rounded-lg mb-6">
-                    <div className="text-sm text-gray-500 mb-2">
-                        <Link href={"/loadimage"}>Главная</Link> / <Link href={"/allproject"}>Все проекты</Link>
-                    </div>
-                    <h1 className="text-2xl font-bold text-orange-500 mb-6">Создать проект</h1>
+            <div className="w-4/5 z-20 bg-[#1A1A25]">
+                <div className="bg-[#1A1A25] p-6 rounded-2xl mb-6">
+                   <div>
+                        <h1 className="text-2xl font-bold text-[#119BD7] mb-6">Создать проект</h1>
+                   </div>
 
                     <input
                         type="text"
                         placeholder="Введите название проекта"
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        className="border border-gray-300 rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2 "
                     />
 
                     <div
                         onDrop={handleDrop}
                         onDragOver={(e) => e.preventDefault()}
-                        className="bg-white rounded-lg border border-gray-300 p-6"
+                        className="bg-[#1A1A25] rounded-lg border border-[#919191] p-6"
                     >
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="font-semibold">Загруженные фото</h2>
+                            <h2 className="font-semibold text-[#119BD7]">Загруженные фото</h2>
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="w-8 h-8 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center hover:bg-orange-200 transition-colors"
+                                className="w-8 h-8 border-1 border-[#119BD7] text-[#119BD7] rounded-full flex items-center justify-center  transition-colors"
                             >
                                 <FiPlus size={16}/>
                             </button>
@@ -255,23 +277,23 @@ function LoadImage() {
 
                         {files.length === 0 && !isUploading && (
                             <div
-                                className="border-dashed border-2 border-orange-400 rounded-lg p-8 text-center cursor-pointer hover:border-orange-500 transition-colors">
+                                className="border-dashed border-2 border-[#119BD7] rounded-lg p-8 text-center cursor-pointer hover:border-[#119BD7] transition-colors">
                                 <div
-                                    className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <FiUpload size={24} className="text-orange-500"/>
+                                    className="w-12 h-12  border-[#119BD7] bg-blue-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <FiUpload size={24} className="text-[#119BD7] "/>
                                 </div>
-                                <p className="text-orange-500 font-medium mb-1">Выберите фотографии</p>
+                                <p className="text-[#119BD7] font-medium mb-1">Выберите фотографии</p>
                                 <p className="text-gray-500 text-sm mb-1">или перетащите в область</p>
                                 <p className="text-gray-400 text-xs">максимум 100 фотографий*</p>
                             </div>
                         )}
 
                         {uploadStage === "uploading" && (
-                            <div className="border-dashed border-2 border-orange-400 rounded-lg p-8 text-center">
-                                <p className="text-orange-500 font-medium mb-1">Загрузка файлов...</p>
+                            <div className="border-dashed border-2 border-[#119BD7] rounded-lg p-8 text-center">
+                                <p className="text-[#119BD7] font-medium mb-1">Загрузка файлов...</p>
                                 <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                                     <div
-                                        className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                                        className="bg-[#119BD7] h-2 rounded-full transition-all duration-300"
                                         style={{width: `${globalProgress}%`}}
                                     ></div>
                                 </div>
@@ -311,10 +333,10 @@ function LoadImage() {
                             <button
                                 onClick={handleUpload}
                                 disabled={isUploading || files.length === 0}
-                                className={`px-6 py-2 rounded-full border border-orange-400 text-orange-500 font-medium flex items-center gap-2 ${
+                                className={`px-6 py-2 rounded-full border border-[#119BD7] text-[#119BD7] font-medium flex items-center gap-2 ${
                                     isUploading || files.length === 0
                                         ? "opacity-50 cursor-not-allowed"
-                                        : "hover:bg-orange-50 transition-colors"
+                                        : " transition-colors"
                                 }`}
                             >
                                 <span>Запустить анализ</span>
