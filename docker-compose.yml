@@ -30,6 +30,7 @@ services:
     env_file: .env
     depends_on:
       - lep-db
+      - redis
       - rabbitmq
       - minio
     restart: always
@@ -37,12 +38,11 @@ services:
       - app-network
 
   rabbitmq:
-    container_name: rabbitmq_broker
+    container_name: rabbitmq
     image: rabbitmq:3-management-alpine
     env_file: .env
-    expose:
-      - "5672"
     ports:
+      - "5672:5672"
       - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
@@ -62,23 +62,7 @@ services:
     depends_on:
       - lep-django
       - rabbitmq
-      - minio
-    restart: always
-    networks:
-      - app-network
-
-  celery_beat:
-    container_name: celery_beat
-    build:
-      context: ./ml_backend
-      dockerfile: Dockerfile
-    command: celery -A ml_backend beat --loglevel=INFO
-    volumes:
-      - ./ml_backend:/app
-    env_file: .env
-    depends_on:
-      - lep-django
-      - rabbitmq
+      - redis
       - minio
     restart: always
     networks:

@@ -26,7 +26,6 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
@@ -42,7 +41,6 @@ ALLOWED_HOSTS = [
     "django",
     "lep-nginx",
 ]
-
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -82,22 +80,22 @@ INSTALLED_APPS = [
 UNFOLD = {
     "SITE_TITLE": "Панель управления",
     "SITE_HEADER": "Админ панель",
-    "SITE_SUBHEADER": "Управление вузом",
+    "SITE_SUBHEADER": "Управление системой ЛЭП",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,
     "SHOW_BACK_BUTTON": False,
     "COLORS": {
         "primary": {
-            "50": "#e9fadc",
-            "100": "#ccf3b4",
-            "200": "#a3e77c",
-            "300": "#76db56",
-            "400": "#49cf38",
-            "500": "#1cbf50",
-            "600": "#129d46",
-            "700": "#0f7c3c",
-            "800": "#0b5c31",
-            "900": "#083c25",
+            "50": "#e4f4fc",
+            "100": "#c5e6fa",
+            "200": "#8ec9f3",
+            "300": "#57acec",
+            "400": "#228fdf",
+            "500": "#119BD7",
+            "600": "#0f7cb4",
+            "700": "#0c5e91",
+            "800": "#093f6d",
+            "900": "#05214a",
         },
         "font": {
             "subtle-light": "var(--color-base-500)",
@@ -195,7 +193,6 @@ S3_CLIENT_PRIVATE = boto3.client(
     region_name=AWS_S3_REGION_NAME,
 )
 
-
 try:
     S3_CLIENT_PRIVATE.create_bucket(Bucket=AWS_STORAGE_BUCKET_NAME)
 except botocore.exceptions.ClientError as e:
@@ -220,11 +217,9 @@ S3_CLIENT_PRIVATE.put_bucket_policy(
     Bucket=AWS_STORAGE_BUCKET_NAME, Policy=json.dumps(public_policy)
 )
 
-
 REDIS_HOST = os.getenv("REDIS_HOST", "redis")
 REDIS_PORT = os.getenv("REDIS_PORT", "6379")
 REDIS_DB = os.getenv("REDIS_DB", "0")
-REDIS_CHANNELS = os.getenv("REDIS_CHANNELS", "1")
 REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 CACHES = {
@@ -234,7 +229,6 @@ CACHES = {
         "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
     }
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -247,11 +241,10 @@ RABBITMQ_URL = (
     f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}//"
 )
 
-
 CELERY_BROKER_URL = (
     f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}//"
 )
-CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
@@ -279,7 +272,6 @@ DATABASES = {
     },
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -298,7 +290,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -309,7 +300,6 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/

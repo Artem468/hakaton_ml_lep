@@ -12,10 +12,11 @@ class AiModelListSerializer(serializers.ModelSerializer):
 class BatchListSerializer(serializers.ModelSerializer):
     photo_count = serializers.SerializerMethodField()
     detection_results = serializers.SerializerMethodField()
+    processing_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Batch
-        fields = ("id", "name", "uploaded_at", "photo_count", "detection_results")
+        fields = ("id", "name", "uploaded_at", "photo_count", "detection_results", "processing_status",)
 
     def get_photo_count(self, obj) -> int:
         return obj.lepimage_set.count()
@@ -26,6 +27,26 @@ class BatchListSerializer(serializers.ModelSerializer):
             for img in obj.lepimage_set.all()
             if img.detection_result
         ]
+
+    def get_processing_status(self, obj) -> str:
+        if obj.status:
+            return "reviewed"
+
+        images = LepImage.objects.filter(batch=obj)
+        total = images.count()
+
+        processed_count = images.filter(detection_result__isnull=False).count()
+
+        if processed_count == 0:
+            return "not_processed"
+
+        if processed_count < total:
+            return "processing"
+
+        if processed_count == total:
+            return "completed"
+
+        return "not_processed"
 
 
 class LepImageSerializer(serializers.ModelSerializer):
