@@ -242,3 +242,22 @@ class ConfirmUploadAPIView(APIView):
 class BatchStatusView(generics.RetrieveAPIView):
     queryset = Batch.objects.all()
     serializer_class = BatchStatusSerializer
+
+
+class BatchImagesStatsView(APIView):
+    @extend_schema(
+        tags=["Обработка и отдача фото"],
+        summary="Процент обработанных фотографий от общего количества",
+        description="Процент обработанных фотографий от общего количества",
+        responses={200: {"total": "integer", "processed": "integer", "not_processed": "integer"}},
+    )
+    def get(self, request):
+        total = LepImage.objects.count()
+        processed = LepImage.objects.filter(detection_result__isnull=False).count()
+        not_processed = total - processed
+
+        return Response({
+            "total": total,
+            "processed": processed,
+            "not_processed": not_processed
+        }, status=status.HTTP_200_OK)
