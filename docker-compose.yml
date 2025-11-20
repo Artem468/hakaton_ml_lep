@@ -58,6 +58,8 @@ services:
     command: celery -A ml_backend worker --loglevel=INFO
     volumes:
       - ./ml_backend:/app
+      - static_volume:/app/static
+      - media_volume:/app/media
     env_file: .env
     depends_on:
       - lep-django

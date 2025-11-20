@@ -50,15 +50,18 @@ class BatchListSerializer(serializers.ModelSerializer):
 
 
 class LepImageSerializer(serializers.ModelSerializer):
+    uploaded_at = serializers.DateTimeField(source='batch.uploaded_at', read_only=True)
+
     class Meta:
         model = LepImage
         fields = [
             "id",
             "file_key",
             "preview",
+            "result",
             "latitude",
             "longitude",
-            "created_at",
+            "uploaded_at",
             "detection_result",
         ]
 

@@ -18,7 +18,7 @@ class AiModel(models.Model):
 
 
 class Batch(models.Model):
-    name = models.CharField(max_length=100, verbose_name="Название")
+    name = models.CharField(max_length=100, verbose_name="Название", null=True, blank=True)
     uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Загружено")
     status = models.BooleanField(default=False, verbose_name="Просмотрено")
 
@@ -42,6 +42,13 @@ class LepImage(models.Model):
         max_length=500,
         help_text="Путь в бакете на превью MinIO (например: uploads/2025/11/18/dronex/12345.tiff)",
         verbose_name="Превью",
+        null=True,
+        blank=True,
+    )
+    result = models.CharField(
+        max_length=500,
+        help_text="Путь в бакете на результат ИИ MinIO (например: uploads/2025/11/18/dronex/12345.tiff)",
+        verbose_name="Результат",
         null=True,
         blank=True,
     )

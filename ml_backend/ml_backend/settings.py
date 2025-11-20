@@ -233,17 +233,8 @@ CACHES = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-RABBITMQ_USER = os.getenv("RABBITMQ_DEFAULT_USER")
-RABBITMQ_PASS = os.getenv("RABBITMQ_DEFAULT_PASS")
-RABBITMQ_HOST = os.getenv("RABBITMQ_HOST")
-RABBITMQ_PORT = os.getenv("RABBITMQ_PORT")
-RABBITMQ_URL = (
-    f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}//"
-)
 
-CELERY_BROKER_URL = (
-    f"amqp://{RABBITMQ_USER}:{RABBITMQ_PASS}@{RABBITMQ_HOST}:{RABBITMQ_PORT}//"
-)
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
@@ -290,7 +281,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "DEBUG")
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
