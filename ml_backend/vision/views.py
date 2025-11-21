@@ -1,3 +1,7 @@
+import datetime
+from collections import defaultdict
+from datetime import timedelta
+
 from django.conf import settings
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
@@ -21,7 +25,7 @@ from .serializers import (
     ConfirmUploadSerializer,
     BatchStatusSerializer,
     DeleteBatchSerializer,
-    BulkDeleteImageSerializer, BatchUpdateResponseSerializer, BatchUpdateSerializer,
+    BulkDeleteImageSerializer, BatchUpdateResponseSerializer, BatchUpdateSerializer, DefectStatsWeeklySerializer,
 )
 from .tasks import process_image_task
 from .utils import make_file_key
@@ -393,3 +397,63 @@ class BatchUpdateView(generics.UpdateAPIView):
         response_data['presigned_urls'] = presigned_urls
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Обработка и отдача фото"])
+class DefectStatsView(APIView):
+    @extend_schema(
+        summary="Статистика дефектов по дням за неделю",
+        description="Возвращает количество дефектов для каждого дня за последние 7 дней",
+        responses={200: DefectStatsWeeklySerializer}
+    )
+    def get(self, request):
+        end_date = datetime.datetime.now()
+        start_date = end_date - timedelta(days=7)
+
+        damage_classes = {
+            "bad_insulator",
+            "damaged_insulator",
+            "nest",
+        }
+
+        batches_last_week = Batch.objects.filter(
+            uploaded_at__gte=start_date,
+            uploaded_at__lte=end_date
+        ).prefetch_related('lepimage_set')
+
+        daily_data = defaultdict(lambda: {'defect_count': 0, 'image_count': 0})
+
+        total_defects = 0
+
+        for batch in batches_last_week:
+            batch_date = batch.uploaded_at.date()
+
+            for image in batch.lepimage_set.all():
+                daily_data[batch_date]['image_count'] += 1
+
+                if not image.detection_result:
+                    continue
+
+                defect_count = sum(
+                    1 for item in image.detection_result
+                    if item.get("class") in damage_classes
+                )
+
+                daily_data[batch_date]['defect_count'] += defect_count
+                total_defects += defect_count
+
+        daily_stats = []
+        for day_date in sorted(daily_data.keys()):
+            daily_stats.append({
+                'date': day_date.isoformat(),
+                'defect_count': daily_data[day_date]['defect_count'],
+                'image_count': daily_data[day_date]['image_count']
+            })
+
+        response_data = {
+            'daily_stats': daily_stats,
+            'total_defects': total_defects
+        }
+
+        serializer = DefectStatsWeeklySerializer(response_data)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -40,17 +40,23 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "django",
     "lep-nginx",
+    "hakatonmllep.vercel.app",
+    "nominally-huge-millipede.cloudpub.ru"
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:80",
     "http://127.0.0.1",
+    "https://hakatonmllep.vercel.app",
+    "https://nominally-huge-millipede.cloudpub.ru"
 ]
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:80",
     "http://127.0.0.1",
+    "https://hakatonmllep.vercel.app",
+    "https://nominally-huge-millipede.cloudpub.ru"
 ]
 
 AUTH_USER_MODEL = "users.User"

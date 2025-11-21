@@ -178,3 +178,16 @@ class BatchUpdateResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batch
         fields = ['id', 'name', 'status', 'uploaded_at', 'presigned_urls']
+
+
+class DailyDefectSerializer(serializers.Serializer):
+    """Статистика дефектов по дням"""
+    date = serializers.DateField(help_text="Дата")
+    defect_count = serializers.IntegerField(help_text="Количество дефектов")
+    image_count = serializers.IntegerField(help_text="Количество изображений")
+
+
+class DefectStatsWeeklySerializer(serializers.Serializer):
+    """Статистика за неделю"""
+    daily_stats = DailyDefectSerializer(many=True, help_text="Статистика по дням")
+    total_defects = serializers.IntegerField(help_text="Всего дефектов за неделю")
