@@ -149,3 +149,32 @@ class BulkDeleteImageSerializer(serializers.Serializer):
         allow_empty=False,
         help_text="Список ID изображений для удаления"
     )
+
+
+class BatchUpdateSerializer(serializers.ModelSerializer):
+    """Сериализатор для входящих данных"""
+    upload_requests = serializers.ListField(
+        child=serializers.CharField(max_length=255),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+        help_text="Список имен файлов для загрузки"
+    )
+
+    class Meta:
+        model = Batch
+        fields = ['id', 'name', 'status', 'uploaded_at', 'upload_requests']
+        read_only_fields = ['id', 'status', 'uploaded_at']
+
+
+class BatchUpdateResponseSerializer(serializers.ModelSerializer):
+    """Сериализатор для ответа (показывает presigned_urls в Swagger)"""
+    presigned_urls = serializers.DictField(
+        child=serializers.URLField(),
+        read_only=True,
+        help_text="Словарь с presigned URLs: {'filename.jpg': 'https://s3.amazonaws.com/...'}"
+    )
+
+    class Meta:
+        model = Batch
+        fields = ['id', 'name', 'status', 'uploaded_at', 'presigned_urls']

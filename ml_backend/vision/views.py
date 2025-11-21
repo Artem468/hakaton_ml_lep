@@ -10,7 +10,6 @@ from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from ultralytics import YOLO
 
 from .filters import BatchFilter
 from .models import AiModel, Batch, LepImage
@@ -22,7 +21,7 @@ from .serializers import (
     ConfirmUploadSerializer,
     BatchStatusSerializer,
     DeleteBatchSerializer,
-    BulkDeleteImageSerializer,
+    BulkDeleteImageSerializer, BatchUpdateResponseSerializer, BatchUpdateSerializer,
 )
 from .tasks import process_image_task
 from .utils import make_file_key
@@ -230,7 +229,7 @@ class ConfirmUploadAPIView(APIView):
 
         s3 = settings.S3_CLIENT_PRIVATE
         confirmed_count = 0
-        for image in batch.lepimage_set.all():
+        for image in batch.lepimage_set.filter(detection_result__isnull=True):
             try:
                 s3.head_object(
                     Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=image.file_key
@@ -321,3 +320,80 @@ class ImageDeleteView(generics.GenericAPIView):
             )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BatchUpdateView(generics.UpdateAPIView):
+    """
+    PATCH /batch/update/{id}/
+
+    Обновляет Batch и возвращает presigned URLs для загрузки файлов.
+    """
+    queryset = Batch.objects.all()
+    serializer_class = BatchUpdateSerializer
+    http_method_names = ['patch']
+
+    @extend_schema(
+        summary="Обновить батч и получить ссылки на S3",
+        description="""
+        Обновляет имя батча и генерирует Presigned URLs для загрузки файлов в S3.
+
+        **Параметры:**
+        - `name` (опционально) — новое имя батча
+        - `upload_requests` (опционально) — массив имен файлов
+
+        **Ответ:**
+        - Данные батча + словарь `presigned_urls` с ссылками
+        """,
+        request=BatchUpdateSerializer,
+        responses={200: BatchUpdateResponseSerializer},
+        examples=[
+            OpenApiExample(
+                'Изменение имени и запрос ссылок',
+                value={
+                    "name": "Партия от 21 ноября",
+                    "upload_requests": ["image1.jpg", "image2.png"]
+                },
+                request_only=True
+            ),
+            OpenApiExample(
+                'Только изменение имени',
+                value={"name": "Новое имя"},
+                request_only=True
+            )
+        ]
+    )
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        upload_requests = serializer.validated_data.pop('upload_requests', [])
+
+        self.perform_update(serializer)
+
+        presigned_urls = {}
+
+        if upload_requests:
+            s3_client = settings.S3_CLIENT_PRIVATE
+
+            for filename in upload_requests:
+                s3_key = make_file_key(instance.id, filename)
+
+                try:
+                    url = s3_client.generate_presigned_url(
+                        'put_object',
+                        Params={
+                            'Bucket': settings.AWS_STORAGE_BUCKET_NAME,
+                            'Key': s3_key
+                        },
+                        ExpiresIn=3600
+                    )
+                    presigned_urls[filename] = url
+                except Exception as e:
+                    pass
+
+        response_data = serializer.data
+        response_data['presigned_urls'] = presigned_urls
+
+        return Response(response_data, status=status.HTTP_200_OK)
