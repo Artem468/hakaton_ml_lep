@@ -6,17 +6,17 @@ from celery import shared_task
 from django.conf import settings
 from ultralytics import YOLO
 
-from .models import LepImage
+from .models import LepImage, AiModel
 
 
 @shared_task
-def process_image_task(file_key: str, model: YOLO):
+def process_image_task(file_key: str, model_id: int):
     """
     Обрабатывает изображение с помощью YOLO модели.
 
     Args:
         file_key: Ключ файла в S3
-        model: Объект модели
+        model_id: Объект модели
     """
     s3_client = settings.S3_CLIENT_PRIVATE
     bucket = settings.AWS_STORAGE_BUCKET_NAME
@@ -25,6 +25,12 @@ def process_image_task(file_key: str, model: YOLO):
         image_obj = LepImage.objects.get(file_key=file_key)
     except LepImage.DoesNotExist:
         return {"error": f"Image with file_key={file_key} not found"}
+
+    try:
+        model_obj = AiModel.objects.get(id=model_id)
+        model = YOLO(model_obj.model_file.path)
+    except AiModel.DoesNotExist:
+        return {"error": f"Model with id={model_id} not found"}
 
     try:
         obj = s3_client.get_object(Bucket=bucket, Key=file_key)

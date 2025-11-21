@@ -8,8 +8,9 @@ app = Celery('ml_backend')
 app.conf.update(
     task_acks_late=True,
     task_reject_on_worker_lost=True,
-    task_serializer='pickle',
-    result_serializer='pickle',
+    task_serializer='json',
+    accept_content=['json'],
+    result_serializer='json',
     task_track_started=True,
     task_compression='gzip',
     result_compression='gzip',
