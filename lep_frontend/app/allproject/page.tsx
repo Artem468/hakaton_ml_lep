@@ -139,7 +139,7 @@ export default function AllProject() {
 
         return (
             <span
-                className={`px-3 py-1 rounded-full text-xs font-semibold text-white ${config.color}`}
+                className={`px-2 sm:px-3 py-1 rounded-full text-xs font-semibold text-white ${config.color}`}
             >
                 {config.label}
             </span>
@@ -163,50 +163,50 @@ export default function AllProject() {
             <Image
                 src={backImage}
                 alt=""
-                className="absolute right-0 z-0 size-96 bottom-0 pointer-events-none"
+                className="absolute right-0 z-0 size-64 md:size-96 bottom-0 pointer-events-none opacity-50"
             />
             <Header />
 
-            <div className="w-4/5 mt-6 z-20">
-                <div className=" rounded-lg">
-                    <div className="bg-[#1A1A25] p-6 rounded-lg mb-6">
-                        <div className="text-sm text-gray-500 mb-2">
+            <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
+                <div className="rounded-lg">
+                    <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
+                        <div className="text-xs sm:text-sm text-gray-500 mb-2">
                             <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
                                 Главная
                             </Link>{" "}
                             / Все проекты
                         </div>
-                        <h1 className="text-2xl font-bold text-[#119BD7]">Все проекты</h1>
+                        <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">Все проекты</h1>
                     </div>
 
-                    <div className="bg-[#1A1A25] p-6 rounded-lg items-center gap-5 flex flex-col mb-6 relative">
+                    <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg items-center gap-4 sm:gap-5 flex flex-col mb-4 sm:mb-6 relative">
                         <button
                             onClick={() => setShowDateRangePicker(!showDateRangePicker)}
                             className="flex items-center gap-2 w-full justify-center hover:opacity-80 transition-opacity"
                         >
-                            <VscSettings size={36} className="text-[#119BD7]" />
-                            <div className="w-11/12 flex justify-center p-3 rounded-3xl text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
+                            <VscSettings size={28} className="text-[#119BD7] sm:w-9 sm:h-9" />
+                            <div className="flex-1 sm:w-11/12 flex justify-center p-2 sm:p-3 rounded-3xl text-sm sm:text-base text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
                                 {displayDateRange}
                             </div>
                         </button>
 
                         {showDateRangePicker && (
-                            <div className="w-11/12 mt-4 p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-6 transition-all">
-                                <h3 className="text-lg font-bold text-[#119BD7] flex items-center gap-2">
-                                    <BiCalendar size={24} />
+                            <div className="w-full sm:w-11/12 mt-2 sm:mt-4 p-4 sm:p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-4 sm:space-y-6 transition-all">
+                                <h3 className="text-base sm:text-lg font-bold text-[#119BD7] flex items-center gap-2">
+                                    <BiCalendar size={20} className="sm:w-6 sm:h-6" />
                                     Выбор периода
                                 </h3>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-[#CACACA]">
+                                        <label className="block text-xs sm:text-sm font-semibold text-[#CACACA]">
                                             Начальная дата
                                         </label>
                                         <input
                                             type="date"
                                             value={dateRange.start}
                                             onChange={(e) => handleDateChange("start", e.target.value)}
-                                            className="w-full px-4 py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-[#CACACA]
+                                            className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-sm sm:text-base text-[#CACACA]
                                             focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
                                             hover:border-[#119BD7]/50 transition-all
                                             [color-scheme:dark]
@@ -215,14 +215,14 @@ export default function AllProject() {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <label className="block text-sm font-semibold text-[#CACACA]">
+                                        <label className="block text-xs sm:text-sm font-semibold text-[#CACACA]">
                                             Конечная дата
                                         </label>
                                         <input
                                             type="date"
                                             value={dateRange.end}
                                             onChange={(e) => handleDateChange("end", e.target.value)}
-                                            className="w-full px-4 py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-[#CACACA]
+                                            className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-sm sm:text-base text-[#CACACA]
                                             focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
                                             hover:border-[#119BD7]/50 transition-all
                                             [color-scheme:dark]
@@ -231,24 +231,24 @@ export default function AllProject() {
                                     </div>
                                 </div>
 
-                                <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+                                <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-700">
                                     <button
                                         onClick={handleResetFilters}
-                                        className="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
+                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
                                         hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
                                     >
                                         Сбросить
                                     </button>
                                     <button
                                         onClick={() => setShowDateRangePicker(false)}
-                                        className="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
+                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
                                         hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
                                     >
                                         Отмена
                                     </button>
                                     <button
                                         onClick={handleApplyFilters}
-                                        className="px-5 py-2.5 text-[#119BD7] font-semibold bg-[rgb(17,155,215,20%)] rounded-lg
+                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-[#119BD7] font-semibold bg-[rgb(17,155,215,20%)] rounded-lg
                                         hover:bg-[rgb(17,155,215,35%)] hover:scale-105 transition-all duration-200
                                         border border-[#119BD7]/30 shadow-lg shadow-[#119BD7]/20"
                                     >
@@ -259,7 +259,7 @@ export default function AllProject() {
                         )}
                     </div>
 
-                    <div className="bg-[#1A1A25] rounded-lg z-20 overflow-hidden">
+                    <div className="bg-[#1A1A25] rounded-lg z-20 overflow-hidden hidden md:block">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-800">
                                 <thead className="bg-[#1A1A25]">
@@ -338,16 +338,70 @@ export default function AllProject() {
                         </div>
                     </div>
 
+                    <div className="md:hidden space-y-3">
+                        {loading ? (
+                            <div className="bg-[#1A1A25] p-6 rounded-lg text-center text-gray-500">
+                                <div className="flex justify-center items-center">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
+                                    <span className="ml-3">Загрузка проектов...</span>
+                                </div>
+                            </div>
+                        ) : projects.length === 0 ? (
+                            <div className="bg-[#1A1A25] p-6 rounded-lg text-center text-gray-500">
+                                Нет проектов для отображения
+                            </div>
+                        ) : (
+                            projects.map((project, index) => (
+                                <div
+                                    key={project.id}
+                                    className="bg-[#1A1A25] p-4 rounded-lg border border-gray-800 hover:border-[#119BD7]/50 transition-all"
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-2 mb-2">
+                                                <span className="text-xs font-medium text-gray-400">
+                                                    #{String(getItemNumber(index)).padStart(2, "0")}
+                                                </span>
+                                                {getStatusBadge(project.processing_status)}
+                                            </div>
+                                            <h3 className="text-base font-bold text-white mb-1">
+                                                {project.name}
+                                            </h3>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                                        <div>
+                                            <span className="text-gray-500 block text-xs mb-1">Фотографий</span>
+                                            <span className="text-gray-300 font-medium">{project.photo_count}</span>
+                                        </div>
+                                        <div>
+                                            <span className="text-gray-500 block text-xs mb-1">Дата создания</span>
+                                            <span className="text-gray-300 font-medium">{formatDate(project.uploaded_at)}</span>
+                                        </div>
+                                    </div>
+
+                                    <Link
+                                        href={`/batch/${project.id}?name=${encodeURIComponent(project.name)}`}
+                                        className="block w-full text-center px-4 py-2 bg-[#119BD7]/20 border border-[#119BD7] text-[#119BD7] rounded-lg font-medium hover:bg-[#119BD7] hover:text-white transition-colors text-sm"
+                                    >
+                                        Подробнее →
+                                    </Link>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
                     {!loading && projects.length > 0 && (
-                        <div className="mt-6 flex items-center justify-between bg-[#1A1A25] p-4 rounded-lg">
-                            <div className="text-sm text-gray-400">
+                        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between bg-[#1A1A25] p-3 sm:p-4 rounded-lg gap-3">
+                            <div className="text-xs sm:text-sm text-gray-400">
                                 Показаны {start} - {end} из {totalCount}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={handlePreviousPage}
                                     disabled={!previousPage}
-                                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition-colors text-sm ${
                                         previousPage
                                             ? "bg-[#119BD7] text-white hover:bg-[#1da9f0]"
                                             : "bg-gray-700 text-gray-500 cursor-not-allowed"
@@ -355,13 +409,13 @@ export default function AllProject() {
                                 >
                                     ← Назад
                                 </button>
-                                <span className="px-4 py-2 text-[#119BD7] font-semibold">
-                                    Страница {currentPage}
+                                <span className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-sm whitespace-nowrap">
+                                    Стр. {currentPage}
                                 </span>
                                 <button
                                     onClick={handleNextPage}
                                     disabled={!nextPage}
-                                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition-colors text-sm ${
                                         nextPage
                                             ? "bg-[#119BD7] text-white hover:bg-[#1da9f0]"
                                             : "bg-gray-700 text-gray-500 cursor-not-allowed"
@@ -373,10 +427,10 @@ export default function AllProject() {
                         </div>
                     )}
 
-                    <div className="mt-6">
+                    <div className="mt-4 sm:mt-6">
                         <Link
                             href="/loadimage"
-                            className="inline-flex items-center px-6 py-3 border border-[#119BD7] text-[#119BD7] rounded-full font-medium hover:bg-[#119BD7] hover:text-white transition-colors"
+                            className="inline-flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-[#119BD7] text-[#119BD7] rounded-full font-medium hover:bg-[#119BD7] hover:text-white transition-colors text-sm sm:text-base"
                         >
                             + Создать проект
                         </Link>

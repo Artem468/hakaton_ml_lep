@@ -80,8 +80,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '2.0'      # Максимум 2 CPU
-          memory: 4G       # Максимум 4GB RAM
+          cpus: '6.0'      # Максимум 2 CPU
+          memory: 10G       # Максимум 4GB RAM
         reservations:
           cpus: '1.0'      # Минимум 1 CPU
           memory: 2G       # Минимум 2GB RAM
