@@ -17,7 +17,8 @@ interface Stats {
     total: number;
     processed: number;
     not_processed: number;
-    damage_percentage: number
+    images_with_damage: number;
+    damage_percentage: number;
 }
 
 interface DailyStat {
@@ -48,6 +49,7 @@ export default function Stats() {
                     })
                 ]);
                 setStats(statsData);
+                console.log(defectsData);
                 setDefectsStats(defectsData);
             } catch (error) {
                 console.error("Ошибка при загрузке статистики:", error);
@@ -60,12 +62,12 @@ export default function Stats() {
     }, []);
 
     const processedPercentage = stats ? Math.round((stats.processed / stats.total) * 100) : 0;
-    const defectsPercentage = 68;
+
 
     const chartData = defectsStats ? {
         labels: defectsStats.daily_stats.map(stat => {
             const date = new Date(stat.date);
-            return date.toLocaleDateString('ru-RU', { weekday: 'short' }).slice(0, 2);
+            return date.toLocaleDateString('ru-RU', {weekday: 'short'}).slice(0, 2);
         }),
         datasets: [{
             label: 'Кол-во выявленных дефектов',
@@ -81,7 +83,8 @@ export default function Stats() {
             pointHoverBorderWidth: 2,
         }]
     } : null;
-
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
@@ -98,11 +101,11 @@ export default function Stats() {
                 padding: 12,
                 displayColors: false,
                 callbacks: {
-                    title: function(context: any) {
+                    title: function (context: any) {
                         const index = context[0].dataIndex;
                         return defectsStats?.daily_stats[index].date || '';
                     },
-                    label: function(context: any) {
+                    label: function (context: any) {
                         return `Дефектов: ${context.parsed.y}`;
                     }
                 }
@@ -141,7 +144,11 @@ export default function Stats() {
             }
         }
     };
-
+    const mediumCircle = {
+        cx: 88,
+        cy: 88,
+        r: 62
+    };
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
             <Image
@@ -163,7 +170,8 @@ export default function Stats() {
                 </div>
 
                 {loading ? (
-                    <div className="bg-[#1A1A25] p-6 rounded-lg flex justify-center items-center min-h-[300px] sm:min-h-[400px]">
+                    <div
+                        className="bg-[#1A1A25] p-6 rounded-lg flex justify-center items-center min-h-[300px] sm:min-h-[400px]">
                         <div className="flex items-center gap-3">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
                             <span className="text-gray-400 text-sm sm:text-base">Загрузка статистики...</span>
@@ -192,19 +200,20 @@ export default function Stats() {
                                                 stroke="#119BD7"
                                                 strokeWidth="20"
                                                 fill="none"
-                                                strokeDasharray={`${processedPercentage * 5.026} ${502.6 - processedPercentage * 5.026}`}
+                                                strokeDasharray={`${(processedPercentage / 100) * (2 * Math.PI * 67)} ${2 * Math.PI * 67}`}
                                                 strokeLinecap="round"
                                                 className="sm:stroke-[22] md:stroke-[24]"
                                             />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className="text-3xl sm:text-4xl font-bold text-white">
+                                           <span className="text-xl sm:text-2xl font-bold text-white">
                                                 {processedPercentage}%
                                             </span>
                                         </div>
                                     </div>
                                     <h3 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-2">Обработано</h3>
-                                    <p className="text-gray-400 text-xs sm:text-sm text-center">среди всех изображений</p>
+                                    <p className="text-gray-400 text-xs sm:text-sm text-center">среди всех
+                                        изображений</p>
                                 </div>
 
                                 <div className="flex flex-col items-center">
@@ -226,24 +235,24 @@ export default function Stats() {
                                                 stroke="#119BD7"
                                                 strokeWidth="20"
                                                 fill="none"
-                                                strokeDasharray={`${defectsPercentage * 5.026} ${502.6 - defectsPercentage * 5.026}`}
+                                                strokeDasharray={`${(stats.damage_percentage / 100) * (2 * Math.PI * 67)} ${2 * Math.PI * 67}`}
                                                 strokeLinecap="round"
+
                                                 className="sm:stroke-[22] md:stroke-[24]"
                                             />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className="text-3xl sm:text-4xl font-bold text-white">
-                                                ${stats.damage_percentage}%
-                                            </span>
+            <span className="text-xl sm:text-2xl font-bold text-white">
+                {Math.min(100, stats.damage_percentage)}%
+            </span>
                                         </div>
                                     </div>
                                     <h3 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-2">Дефектов</h3>
                                     <p className="text-gray-400 text-xs sm:text-sm text-center">Обнаружено</p>
                                 </div>
+
                             </div>
                         </div>
-
-
 
 
                         <div className="bg-[#1A1A25] rounded-lg mb-4 sm:mb-6 overflow-hidden relative">
@@ -257,9 +266,10 @@ export default function Stats() {
                                 <source src="https://cit.gov.ru/v/3.mp4" type="video/mp4"/>
                             </video>
                             <div className="relative p-4 sm:p-6 md:p-8 z-10">
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                <div
+                                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                                     <div>
-                                        <h4 className="text-xs sm:text-sm font-semibold text-gray-400 mb-1 sm:mb-2">KPI</h4>
+                                        <h4 className="text-xs sm:texdefectsPercentage t-sm font-semibold text-gray-400 mb-1 sm:mb-2">KPI</h4>
                                         <p className="text-xs text-gray-500">сколько изображений обработано</p>
                                     </div>
                                     <div className="text-4xl sm:text-5xl font-bold text-[#119BD7]">{stats.total}</div>
@@ -269,7 +279,8 @@ export default function Stats() {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                             <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg ">
-                                <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Всего изображений</div>
+                                <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Всего изображений
+                                </div>
                                 <div className="text-2xl sm:text-3xl font-bold text-white">{stats.total}</div>
                             </div>
 
@@ -287,7 +298,7 @@ export default function Stats() {
                             <div className="bg-[#1A1A25] mt-6 p-4 sm:p-6 md:p-8 rounded-lg mb-4 sm:mb-6">
                                 <h2 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-4 sm:mb-6">Продуктивность</h2>
                                 <div className="w-full h-64 sm:h-80 md:h-96">
-                                    <Line data={chartData} options={chartOptions} />
+                                    <Line data={chartData} options={chartOptions}/>
                                 </div>
                                 <div className="mt-4 text-xs sm:text-sm text-gray-400 text-center">
                                     Кол-во выявленных дефектов
