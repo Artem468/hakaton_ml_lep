@@ -75,6 +75,6 @@ class LepImage(models.Model):
         return self.file_key
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["id"]
         verbose_name = "Фото"
         verbose_name_plural = "Фото"

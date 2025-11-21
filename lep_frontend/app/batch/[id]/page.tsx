@@ -64,12 +64,17 @@ const TABLE_PAGE_SIZE = 30;
 
 export default function ProjectPage() {
     const {id} = useParams();
-    const [project, setProject] = useState<ApiResponse | null>(null);
+    const [photos, setPhotos] = useState<BatchItem[]>([]);
     const [batchStatus, setBatchStatus] = useState<BatchStatus | null>(null);
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [loading, setLoading] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [nextUrl, setNextUrl] = useState<string | null>(null);
+    const [hasMore, setHasMore] = useState(true);
+    const [totalCount, setTotalCount] = useState(0);
     const [tablePage, setTablePage] = useState(1);
 
+    const observerTarget = useRef<HTMLDivElement>(null);
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
     const markers = useRef<maplibregl.Marker[]>([]);
@@ -88,63 +93,83 @@ export default function ProjectPage() {
         });
     };
 
-    const loadAllPages = async (batchId: string): Promise<BatchItem[]> => {
-        let allPhotos: BatchItem[] = [];
-        let nextUrl: string | null = `vision/batches/${batchId}/`;
+    const loadInitialData = async () => {
+        setLoading(true);
+        try {
+            const statusData = await apiFetch<BatchStatus>(
+                `vision/batches/status/${id}/`,
+                {method: "GET"}
+            );
+            setBatchStatus(statusData);
 
-        while (nextUrl) {
-            try {
-                const url: string = nextUrl.startsWith('http')
-                    ? nextUrl.replace(/^https?:\/\/[^\/]+\/api\//, '')
-                    : nextUrl;
+            const response: ApiResponse = await apiFetch<ApiResponse>(
+                `vision/batches/${id}/`,
+                {method: "GET"}
+            );
 
-                const response: ApiResponse = await apiFetch<ApiResponse>(url, {method: "GET"});
-
-                const filteredPhotos = filterPhotosByBatch(response.results, batchId);
-                allPhotos = [...allPhotos, ...filteredPhotos];
-
-                nextUrl = response.next;
-            } catch (error) {
-                console.error("Ошибка при загрузке страницы:", error);
-                break;
-            }
+            const filteredPhotos = filterPhotosByBatch(response.results, id as string);
+            setPhotos(filteredPhotos.sort((a, b) => a.id - b.id));
+            setNextUrl(response.next);
+            setHasMore(!!response.next);
+            setTotalCount(response.count);
+        } catch (err) {
+            console.error("Ошибка при загрузке данных:", err);
+        } finally {
+            setLoading(false);
         }
+    };
 
-        return allPhotos.sort((a, b) => a.id - b.id);
+    const loadMorePhotos = async () => {
+        if (!nextUrl || loadingMore || !hasMore) return;
+
+        setLoadingMore(true);
+        try {
+            const url: string = nextUrl.startsWith('http')
+                ? nextUrl.replace(/^https?:\/\/[^\/]+\/api\//, '')
+                : nextUrl;
+
+            const response: ApiResponse = await apiFetch<ApiResponse>(url, {method: "GET"});
+            const filteredPhotos = filterPhotosByBatch(response.results, id as string);
+
+            setPhotos(prev => [...prev, ...filteredPhotos].sort((a, b) => a.id - b.id));
+            setNextUrl(response.next);
+            setHasMore(!!response.next);
+        } catch (error) {
+            console.error("Ошибка при загрузке следующей страницы:", error);
+        } finally {
+            setLoadingMore(false);
+        }
     };
 
     useEffect(() => {
-        async function load() {
-            setLoading(true);
-            try {
-                const statusData = await apiFetch<BatchStatus>(
-                    `vision/batches/status/${id}/`,
-                    {method: "GET"}
-                );
-                setBatchStatus(statusData);
-
-                const allPhotos = await loadAllPages(id as string);
-
-                setProject({
-                    count: allPhotos.length,
-                    next: null,
-                    previous: null,
-                    results: allPhotos,
-                });
-            } catch (err) {
-                console.error("Ошибка при загрузке данных:", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        load();
+        loadInitialData();
     }, [id]);
 
     useEffect(() => {
-        if (!mapContainer.current || !project || map.current) return;
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && hasMore && !loadingMore) {
+                    loadMorePhotos();
+                }
+            },
+            {threshold: 0.1, rootMargin: "200px"}
+        );
 
-        const photos = project.results;
+        const currentTarget = observerTarget.current;
+        if (currentTarget) {
+            observer.observe(currentTarget);
+        }
+
+        return () => {
+            if (currentTarget) {
+                observer.unobserve(currentTarget);
+            }
+        };
+    }, [hasMore, loadingMore, nextUrl]);
+
+    useEffect(() => {
+        if (!mapContainer.current || photos.length === 0 || map.current) return;
+
         const validPhotos = photos.filter((p) => {
             const lat = parseFloat(p.latitude);
             const lng = parseFloat(p.longitude);
@@ -289,7 +314,7 @@ export default function ProjectPage() {
             map.current?.remove();
             map.current = null;
         };
-    }, [project]);
+    }, [photos]);
 
     const getStatusIndex = (status: string): number => {
         const index = STATUS_STEPS.findIndex((step) => step.key === status);
@@ -308,7 +333,7 @@ export default function ProjectPage() {
         return stepIndex === currentStatusIndex;
     };
 
-    if (loading || !project || !batchStatus)
+    if (loading || !batchStatus)
         return (
             <div className="bg-[#0F0F15] text-white p-6 min-h-screen flex items-center justify-center">
                 <div className="flex items-center gap-3">
@@ -318,7 +343,6 @@ export default function ProjectPage() {
             </div>
         );
 
-    const photos = project.results;
     const currentPhoto = photos[selectedIndex];
     const currentDamages = currentPhoto?.damages ?? [];
     const currentObjects = currentPhoto?.objects ?? [];
@@ -431,17 +455,20 @@ export default function ProjectPage() {
                             <div className="flex items-start">
                                 <div className="flex-1">
                                     <p className="text-white text-sm">
-                                        Всего фотографий: {photos.length} | Дефектов:{" "}
+                                        Всего фотографий: {totalCount > 0 ? totalCount : photos.length} | Дефектов:{" "}
                                         <span className="text-red-400 font-semibold">
                                         {defectCount}
                                     </span>{" "}
+                                        {!hasMore && photos.length < totalCount && (
+                                            <span className="text-gray-400">
+                                                (загружено {photos.length})
+                                            </span>
+                                        )}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-
                 </div>
 
                 <div className="bg-[#1A1A25] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -580,7 +607,6 @@ export default function ProjectPage() {
                                         )}
                                     </>
                                 )}
-
                                 {
                                     item.preview === null &&
                                     <div
@@ -596,10 +622,21 @@ export default function ProjectPage() {
 
                             </div>
                         ))}
+
+                        {/* Элемент-триггер для Intersection Observer */}
+                        {hasMore && <div ref={observerTarget} className="col-span-full h-4"></div>}
                     </div>
-                    {photos.length > 30 && (
-                        <p className="text-xs sm:text-sm text-gray-400 mt-3 text-center">
-                            Прокрутите, чтобы увидеть все фотографии
+
+                    {loadingMore && (
+                        <div className="flex items-center justify-center gap-3 mt-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#119BD7]"></div>
+                            <span className="text-sm text-gray-400">Загрузка...</span>
+                        </div>
+                    )}
+
+                    {!hasMore && photos.length > 0 && (
+                        <p className="text-sm text-gray-400 mt-3 text-center">
+                            Все фотографии загружены ({photos.length})
                         </p>
                     )}
                 </div>
@@ -648,7 +685,6 @@ export default function ProjectPage() {
                                     <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">С разметкой</p>
                                 </div>
                             </div>
-
 
                             <div key={currentPhoto.id}
                                  className="lg:col-span-2 space-y-3 sm:space-y-4">
@@ -755,31 +791,37 @@ export default function ProjectPage() {
                                                 `${BASE_MINI}ml-media/${currentPhoto.file_key}`,
                                                 `original_${selectedIndex + 1}.jpg`
                                             )}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors text-sm"
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#119BD7] hover:bg-[#1da9f0] hover:scale-105 hover:shadow-lg text-white font-semibold rounded-lg transition-all duration-300 ease-in-out transform text-sm group"
                                         >
-                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
+                                            <svg
+                                                className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-y-1 transition-transform duration-300"
+                                                fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                             <span className="hidden sm:inline">Скачать оригинал</span>
                                             <span className="sm:hidden">Оригинал</span>
                                         </button>
+
                                         <button
                                             onClick={() => downloadImage(
                                                 `${BASE_MINI}ml-media/${currentPhoto.result}`,
                                                 `processed_${selectedIndex + 1}.jpg`
                                             )}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-1 border-[#119BD7] text-[#119BD7]  font-semibold rounded-lg transition-colors text-sm"
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-2 border-[#119BD7] text-[#119BD7] hover:bg-[#119BD7] hover:text-white hover:scale-105 hover:shadow-lg font-semibold rounded-lg transition-all duration-300 ease-in-out transform text-sm group"
                                         >
-                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
+                                            <svg
+                                                className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-y-1 transition-transform duration-300"
+                                                fill="none" stroke="currentColor"
+                                                viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                                                       d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                             <span className="hidden sm:inline">Скачать обработанное ИИ</span>
                                             <span className="sm:hidden">С разметкой</span>
                                         </button>
+
                                     </div>
                                 </div>
                             </div>
