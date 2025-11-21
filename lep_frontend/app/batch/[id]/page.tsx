@@ -4,7 +4,6 @@ import React, {useEffect, useState, useRef} from "react";
 import Image from "next/image";
 import {apiFetch, BASE_MINI} from "@/app/api/api";
 import backImage from "@/app/assets/backimage.svg";
-import logo from "@/app/assets/logo.svg";
 import Link from "next/link";
 import {useParams, useSearchParams} from "next/navigation";
 import maplibregl from "maplibre-gl";
@@ -70,26 +69,12 @@ export default function ProjectPage() {
     const [selectedIndex, setSelectedIndex] = useState<number>(0);
     const [loading, setLoading] = useState(true);
     const [tablePage, setTablePage] = useState(1);
-    const [currentUser, setCurrentUser] = useState<User | null>(() => {
-        if (typeof window !== "undefined") {
-            const userStr = localStorage.getItem("user");
-            if (userStr) {
-                try {
-                    return JSON.parse(userStr);
-                } catch (error) {
-                    console.error("Ошибка при загрузке пользователя:", error);
-                    return null;
-                }
-            }
-        }
-        return null;
-    });
+
     const mapContainer = useRef<HTMLDivElement>(null);
     const map = useRef<maplibregl.Map | null>(null);
     const markers = useRef<maplibregl.Marker[]>([]);
 
     const searchParams = useSearchParams();
-    const batchName = searchParams?.get("name") || "Без названия";
 
     const getBatchIdFromFileKey = (fileKey: string): string | null => {
         const match = fileKey.match(/batch_(\d+)\//);
@@ -409,6 +394,19 @@ export default function ProjectPage() {
         return `${d}.${m}.${y} ${h}:${min}`;
     };
 
+    const scrollToSection = (id: string, offset = 100) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+        }
+    };
+
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
             <Image
@@ -419,7 +417,8 @@ export default function ProjectPage() {
             <Header/>
 
             <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
-                <div className="bg-[#1A1A25] flex flex-col lg:flex-row justify-between p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 gap-4">
+                <div
+                    className="bg-[#1A1A25] flex flex-col lg:flex-row justify-between p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 gap-4">
                     <div>
                         <div className="text-xs sm:text-sm text-gray-500 mb-2">
                             <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
@@ -428,18 +427,18 @@ export default function ProjectPage() {
                             / {batchStatus.name}
                         </div>
                         <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
-                         <div className="pt-0 lg:pt-4">
-                        <div className="flex items-start">
-                             <div className="flex-1">
-                                <p className="text-white text-sm">
-                                    Всего фотографий: {photos.length} | Дефектов:{" "}
-                                    <span className="text-red-400 font-semibold">
+                        <div className="pt-0 lg:pt-4">
+                            <div className="flex items-start">
+                                <div className="flex-1">
+                                    <p className="text-white text-sm">
+                                        Всего фотографий: {photos.length} | Дефектов:{" "}
+                                        <span className="text-red-400 font-semibold">
                                         {defectCount}
                                     </span>{" "}
-                                </p>
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </div>
 
 
@@ -502,7 +501,8 @@ export default function ProjectPage() {
 
                     <div className="md:hidden space-y-3">
                         <p className="text-sm text-gray-400 mb-3">
-                            Текущий статус: <span className={`font-semibold ${isStepActive(getStatusIndex(batchStatus.processing_status)) ? "text-[#119BD7]" : "text-gray-500"}`}>
+                            Текущий статус: <span
+                            className={`font-semibold ${isStepActive(getStatusIndex(batchStatus.processing_status)) ? "text-[#119BD7]" : "text-gray-500"}`}>
                                 {STATUS_STEPS[getStatusIndex(batchStatus.processing_status)].label}
                             </span>
                         </p>
@@ -516,14 +516,18 @@ export default function ProjectPage() {
                                     }`}
                                 >
                                     {isStepActive(index) && !isStepCurrent(index) ? (
-                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor"
+                                             viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3}
+                                                  d="M5 13l4 4L19 7"/>
                                         </svg>
                                     ) : (
-                                        <div className={`w-2.5 h-2.5 rounded-full ${isStepActive(index) ? "bg-white" : "bg-gray-600"}`}/>
+                                        <div
+                                            className={`w-2.5 h-2.5 rounded-full ${isStepActive(index) ? "bg-white" : "bg-gray-600"}`}/>
                                     )}
                                 </div>
-                                <span className={`text-sm font-medium ${isStepActive(index) ? "text-[#119BD7]" : "text-gray-500"}`}>
+                                <span
+                                    className={`text-sm font-medium ${isStepActive(index) ? "text-[#119BD7]" : "text-gray-500"}`}>
                                     {step.label}
                                 </span>
                             </div>
@@ -548,26 +552,48 @@ export default function ProjectPage() {
                     >
                         {photos.map((item, index) => (
                             <div
-                                key={item.id}
-                                onClick={() => setSelectedIndex(index)}
+                                key={index}
+                                onClick={() => {
+                                    scrollToSection("photoInfo")
+                                    setSelectedIndex(index)
+                                }}
                                 className={`cursor-pointer border-2 rounded-lg overflow-hidden aspect-square relative transition-all ${
                                     index === selectedIndex
                                         ? "border-[#119BD7] ring-2 ring-[#119BD7]/50"
                                         : "border-gray-700 hover:border-gray-500"
                                 }`}
                             >
-                                <Image
-                                    src={`${BASE_MINI}ml-media/${item.preview}`}
-                                    alt="photo"
-                                    fill
-                                    className="object-cover"
-                                    unoptimized
-                                />
-                                {item.damages && item.damages.length > 0 && (
-                                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-semibold">
-                                        Дефект
-                                    </div>
+                                {item.preview !== null && (
+                                    <>
+                                        <Image
+                                            src={`${BASE_MINI}ml-media/${item.preview}`}
+                                            alt="photo"
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                        {item.damages && item.damages.length > 0 && (
+                                            <div
+                                                className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-semibold">
+                                                Дефект
+                                            </div>
+                                        )}
+                                    </>
                                 )}
+
+                                {
+                                    item.preview === null &&
+                                    <div
+                                        className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                                        <p className="text-[#119BD7]">
+                                            Находится
+                                        </p>
+                                        <p className="text-[#119BD7]">
+                                            в обработке
+                                        </p>
+                                    </div>
+                                }
+
                             </div>
                         ))}
                     </div>
@@ -579,43 +605,61 @@ export default function ProjectPage() {
                 </div>
 
                 {currentPhoto && (
-                    <div className="bg-[#1A1A25] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div id={"photoInfo"} className="bg-[#1A1A25] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                             <div className="lg:col-span-1 space-y-3 sm:space-y-4">
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-2 sm:p-3">
-                                    <Image
-                                        src={`${BASE_MINI}ml-media/${currentPhoto.preview}`}
-                                        alt="Оригинал"
-                                        width={400}
-                                        height={300}
-                                        unoptimized
-                                        className="w-full h-auto object-cover rounded-lg"
-                                    />
+                                    {currentPhoto.preview !== null && (
+                                        <Image
+                                            src={`${BASE_MINI}ml-media/${currentPhoto.preview}`}
+                                            alt="Оригинал"
+                                            width={400}
+                                            height={300}
+                                            unoptimized
+                                            className="w-full h-auto object-cover rounded-lg"
+                                        />
+                                    )}
+                                    {currentPhoto.preview === null && (
+                                        <div
+                                            className="relative w-full aspect-[4/3] flex flex-col items-center justify-center text-center">
+                                            <p className="text-[#119BD7]">Находится в обработке</p>
+                                        </div>
+                                    )}
                                     <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">Оригинал</p>
                                 </div>
+
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-2 sm:p-3">
-                                    <Image
-                                        src={`${BASE_MINI}ml-media/${currentPhoto.result}`}
-                                        alt="С разметкой"
-                                        width={400}
-                                        height={300}
-                                        unoptimized
-                                        className="w-full h-auto object-cover rounded-lg"
-                                    />
-                                    <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
-                                        С разметкой
-                                    </p>
+                                    {currentPhoto.result !== null && (
+                                        <Image
+                                            src={`${BASE_MINI}ml-media/${currentPhoto.result}`}
+                                            alt="С разметкой"
+                                            width={400}
+                                            height={300}
+                                            unoptimized
+                                            className="w-full h-auto object-cover rounded-lg"
+                                        />
+                                    )}
+                                    {currentPhoto.result === null && (
+                                        <div
+                                            className="relative w-full aspect-[4/3] flex flex-col items-center justify-center text-center">
+                                            <p className="text-[#119BD7]">Находится в обработке</p>
+                                        </div>
+                                    )}
+                                    <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">С разметкой</p>
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
+
+                            <div key={currentPhoto.id}
+                                 className="lg:col-span-2 space-y-3 sm:space-y-4">
                                 <div>
                                     <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">
                                         Информация о фото #{selectedIndex + 1}
                                     </h3>
                                     <div className="space-y-2 sm:space-y-3">
                                         <div className="flex items-start">
-                                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                            <div
+                                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                             <div className="flex-1">
                                                 <span className="text-gray-400 text-xs sm:text-sm">Дата загрузки:</span>
                                                 <p className="text-white text-sm">
@@ -625,7 +669,8 @@ export default function ProjectPage() {
                                         </div>
 
                                         <div className="flex items-start">
-                                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                            <div
+                                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                             <div className="flex-1">
                                                 <span className="text-gray-400 text-xs sm:text-sm">Координаты:</span>
                                                 <p className="text-white font-mono text-xs sm:text-sm break-all">
@@ -641,9 +686,11 @@ export default function ProjectPage() {
                                         {hasDefects ? (
                                             <>
                                                 <div className="flex items-start">
-                                                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
-                                                        <span className="text-gray-400 text-xs sm:text-sm">Статус:</span>
+                                                        <span
+                                                            className="text-gray-400 text-xs sm:text-sm">Статус:</span>
                                                         <p className="text-red-400 font-semibold text-sm">
                                                             Обнаружены дефекты ({currentDamages.length})
                                                         </p>
@@ -651,7 +698,8 @@ export default function ProjectPage() {
                                                 </div>
 
                                                 <div className="flex items-start">
-                                                    <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
                                                         <span className="text-gray-400 text-xs sm:text-sm">Обнаруженные дефекты:</span>
                                                         <div className="mt-2 space-y-2">
@@ -669,7 +717,8 @@ export default function ProjectPage() {
                                             </>
                                         ) : (
                                             <div className="flex items-start">
-                                                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                <div
+                                                    className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                 <div className="flex-1">
                                                     <span className="text-gray-400 text-xs sm:text-sm">Статус:</span>
                                                     <p className="text-green-400 font-semibold text-sm">
@@ -681,7 +730,8 @@ export default function ProjectPage() {
 
                                         {currentObjects.length > 0 && (
                                             <div className="flex items-start">
-                                                <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                <div
+                                                    className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                 <div className="flex-1">
                                                     <span className="text-gray-400 text-xs sm:text-sm">Обнаруженные объекты:</span>
                                                     <div className="mt-2 space-y-2">
@@ -707,8 +757,10 @@ export default function ProjectPage() {
                                             )}
                                             className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors text-sm"
                                         >
-                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
+                                                 viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                             <span className="hidden sm:inline">Скачать оригинал</span>
                                             <span className="sm:hidden">Оригинал</span>
@@ -720,8 +772,10 @@ export default function ProjectPage() {
                                             )}
                                             className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-1 border-[#119BD7] text-[#119BD7]  font-semibold rounded-lg transition-colors text-sm"
                                         >
-                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor"
+                                                 viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
                                             <span className="hidden sm:inline">Скачать обработанное ИИ</span>
                                             <span className="sm:hidden">С разметкой</span>
@@ -764,22 +818,37 @@ export default function ProjectPage() {
                                     const actualIndex = (tablePage - 1) * TABLE_PAGE_SIZE + index;
                                     return (
                                         <tr
-                                            key={item.id}
+                                            key={index}
                                             className="border-b border-gray-800 hover:bg-[#29293D] transition-colors cursor-pointer"
-                                            onClick={() => setSelectedIndex(actualIndex)}
+                                            onClick={() => {
+                                                scrollToSection("photoInfo")
+                                                setSelectedIndex(actualIndex)
+                                            }}
                                         >
                                             <td className="py-2 sm:py-4 px-2 sm:px-4 text-gray-400 font-medium">
                                                 {String(getTableItemNumber(index)).padStart(2, "0")}
                                             </td>
                                             <td className="py-2 sm:py-4 px-2 sm:px-4">
-                                                <div className="w-12 h-12 sm:w-16 sm:h-16 relative rounded-lg overflow-hidden">
-                                                    <Image
-                                                        src={`${BASE_MINI}ml-media/${item.preview}`}
-                                                        alt={`thumb-${index}`}
-                                                        fill
-                                                        unoptimized
-                                                        className="object-cover"
-                                                    />
+                                                <div
+                                                    className="w-12 h-12 sm:w-16 sm:h-16 relative rounded-lg overflow-hidden">
+                                                    {
+                                                        item.preview !== null && <Image
+                                                            src={`${BASE_MINI}ml-media/${item.preview}`}
+                                                            alt={`thumb-${index}`}
+                                                            fill
+                                                            unoptimized
+                                                            className="object-cover"
+                                                        />
+                                                    }
+                                                    {
+                                                        item.preview === null &&
+                                                        <div
+                                                            className="absolute inset-0 flex flex-col items-center justify-center">
+                                                            <p className="text-[#119BD7]">
+                                                                ---
+                                                            </p>
+                                                        </div>
+                                                    }
                                                 </div>
                                             </td>
                                             <td className="py-2 sm:py-4 px-2 sm:px-4">
@@ -794,11 +863,13 @@ export default function ProjectPage() {
                                                             </span>
                                                         ))}
                                                         {item.damages.length > 2 && (
-                                                            <span className="text-xs text-gray-400">+{item.damages.length - 2}</span>
+                                                            <span
+                                                                className="text-xs text-gray-400">+{item.damages.length - 2}</span>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
+                                                    <span
+                                                        className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
                                                         Без дефектов
                                                     </span>
                                                 )}
@@ -825,7 +896,8 @@ export default function ProjectPage() {
                     </div>
 
                     {photos.length > TABLE_PAGE_SIZE && (
-                        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 border-t border-gray-700 gap-3">
+                        <div
+                            className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 border-t border-gray-700 gap-3">
                             <div className="text-xs sm:text-sm text-gray-400">
                                 Показано {((tablePage - 1) * TABLE_PAGE_SIZE) + 1} - {Math.min(tablePage * TABLE_PAGE_SIZE, photos.length)} из {photos.length}
                             </div>
@@ -841,7 +913,8 @@ export default function ProjectPage() {
                                 >
                                     ← Назад
                                 </button>
-                                <span className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-xs sm:text-sm whitespace-nowrap">
+                                <span
+                                    className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-xs sm:text-sm whitespace-nowrap">
                                     Стр. {tablePage}/{totalTablePages}
                                 </span>
                                 <button

@@ -164,7 +164,7 @@ class BatchUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Batch
         fields = ['id', 'name', 'status', 'uploaded_at', 'upload_requests']
-        read_only_fields = ['id', 'status', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at']
 
 
 class BatchUpdateResponseSerializer(serializers.ModelSerializer):
