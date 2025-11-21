@@ -80,7 +80,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("accessToken", data.access);
         localStorage.setItem("refreshToken", data.refresh);
 
-        // Обновляем данные пользователя после обновления токена
         const userData = await apiFetch<User>("users/me/", {
           method: "GET",
           headers: { Authorization: `Bearer ${data.access}` },

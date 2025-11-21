@@ -68,7 +68,7 @@ export default function AllProject() {
 
             if (dateRange.start) params.append("date_from", dateRange.start);
             if (dateRange.end) params.append("date_to", dateRange.end);
-            if (searchName.trim()) params.append("name", searchName.trim()); // для поиска
+            if (searchName.trim()) params.append("name", searchName.trim());
 
             const query = params.toString() ? `?${params.toString()}` : "";
             const url = `vision/batches/${query}`;

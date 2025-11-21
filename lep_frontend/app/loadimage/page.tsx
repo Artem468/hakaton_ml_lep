@@ -54,7 +54,6 @@ function LoadImage() {
                 setModelsLoading(true);
                 const response = await apiFetch<AIModel[]>("vision/models/");
                 setModels(response);
-                // Automatically select the first model if available
                 if (response.length > 0) {
                     setSelectedModelId(response[0].id);
                 }
@@ -294,8 +293,6 @@ function LoadImage() {
                         onChange={(e) => setProjectName(e.target.value)}
                         className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2"
                     />
-
-                    {/* Model Selection Dropdown */}
                     <div className="mb-6">
                         <label className="block text-[#119BD7] font-medium mb-2">
                             Выберите модель нейросети
