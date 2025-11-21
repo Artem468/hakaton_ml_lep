@@ -13,6 +13,7 @@ export async function apiFetch<T>(
     ...options,
   });
 
+
   if (!res.ok) {
     throw new Error(`API request failed: ${res.status}`);
   }
