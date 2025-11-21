@@ -1,6 +1,8 @@
 export const BASE_URL = "https://nominally-huge-millipede.cloudpub.ru/api/"; //для апи
 export const BASE_MINI = "https://intangibly-tender-bobwhite.cloudpub.ru/"; //для файлохранилища
 
+
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestInit = {}
@@ -12,8 +14,6 @@ export async function apiFetch<T>(
     },
     ...options,
   });
-
-
   if (!res.ok) {
     throw new Error(`API request failed: ${res.status}`);
   }

@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
-
+import { useRouter } from "next/navigation";
 interface UploadedFile {
     id: string;
     file: File;
@@ -33,6 +33,7 @@ interface AIModel {
 }
 
 function LoadImage() {
+    const router = useRouter();
     const [projectName, setProjectName] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
     const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
@@ -262,6 +263,8 @@ function LoadImage() {
             setGlobalProgress(0);
             setCurrentFileIndex(0);
             setSelectedFiles(new Set());
+            router.push(`/batch/${batchId}`);
+
         } catch (error) {
             console.error("Ошибка при загрузке проекта:", error);
             toast.error("Ошибка при загрузке проекта");

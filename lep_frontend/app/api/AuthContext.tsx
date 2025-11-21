@@ -12,7 +12,7 @@ interface User {
 interface AuthContextType {
   accessToken: string | null;
   user: User | null;
-  login: (email: string, password: string, rememberMe: boolean) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -30,8 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ? JSON.parse(localStorage.getItem("user")!)
       : null
   );
-
-  const login = async (email: string, password: string, rememberMe: boolean) => {
+  const login = async (email: string, password: string) => {
     const data = await apiFetch<{ access: string; refresh: string }>("users/login/", {
       method: "POST",
       body: JSON.stringify({ email, password }),
@@ -40,10 +39,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAccessToken(data.access);
     setRefreshToken(data.refresh);
 
-    if (rememberMe) {
-      localStorage.setItem("accessToken", data.access);
-      localStorage.setItem("refreshToken", data.refresh);
-    }
+    localStorage.setItem("accessToken", data.access);
+    localStorage.setItem("refreshToken", data.refresh);
 
     const userData = await apiFetch<User>("users/me/", {
       method: "GET",
@@ -51,9 +48,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     setUser(userData);
-    if (rememberMe) {
-      localStorage.setItem("user", JSON.stringify(userData));
-    }
+    localStorage.setItem("user", JSON.stringify(userData));
   };
 
   const logout = () => {
@@ -97,7 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ accessToken, user, login, logout }}>
-
         {children}
     </AuthContext.Provider>
   );

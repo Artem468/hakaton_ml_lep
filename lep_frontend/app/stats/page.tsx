@@ -1,6 +1,7 @@
 "use client";
 
-import {useState, useEffect} from "react";
+import React, {useState, useEffect} from "react";
+import {useRouter} from "next/navigation";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
@@ -9,11 +10,13 @@ import Link from "next/link";
 import dynamic from 'next/dynamic';
 import 'chart.js/auto';
 
-const Line = dynamic(() => import('react-chartjs-2').then((mod) => mod.Line), {
+const Doughnut = dynamic(() => import('react-chartjs-2').then((mod) => mod.Doughnut), {
     ssr: false,
 });
 
-interface Stats {
+interface BatchStats {
+    batch_id: number;
+    batch_name: string;
     total: number;
     processed: number;
     not_processed: number;
@@ -21,134 +24,29 @@ interface Stats {
     damage_percentage: number;
 }
 
-interface DailyStat {
-    date: string;
-    defect_count: number;
-    image_count: number;
-}
-
-interface DefectsStats {
-    daily_stats: DailyStat[];
-    total_defects: number;
-}
-
 export default function Stats() {
-    const [stats, setStats] = useState<Stats | null>(null);
-    const [defectsStats, setDefectsStats] = useState<DefectsStats | null>(null);
+    const [batches, setBatches] = useState<BatchStats[]>([]);
+    const [openedBatchId, setOpenedBatchId] = useState<number | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const [statsData, defectsData] = await Promise.all([
-                    apiFetch<Stats>("vision/batches/stats/", {
-                        method: "GET",
-                    }),
-                    apiFetch<DefectsStats>("vision/defects/stats/", {
-                        method: "GET",
-                    })
-                ]);
-                setStats(statsData);
-                console.log(defectsData);
-                setDefectsStats(defectsData);
-            } catch (error) {
-                console.error("Ошибка при загрузке статистики:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStats();
+        apiFetch<BatchStats[]>("vision/batches/stats/", {method: "GET"})
+            .then(data => setBatches(data))
+            .catch(e => console.error(e))
+            .finally(() => setLoading(false));
     }, []);
 
-    const processedPercentage = stats ? Math.round((stats.processed / stats.total) * 100) : 0;
-
-
-    const chartData = defectsStats ? {
-        labels: defectsStats.daily_stats.map(stat => {
-            const date = new Date(stat.date);
-            return date.toLocaleDateString('ru-RU', {weekday: 'short'}).slice(0, 2);
-        }),
-        datasets: [{
-            label: 'Кол-во выявленных дефектов',
-            data: defectsStats.daily_stats.map(stat => stat.defect_count),
-            borderColor: '#119BD7',
-            backgroundColor: 'transparent',
-            tension: 0.4,
-            borderWidth: 3,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            pointHoverBackgroundColor: '#119BD7',
-            pointHoverBorderColor: '#fff',
-            pointHoverBorderWidth: 2,
-        }]
-    } : null;
-    const radius = 40;
-    const circumference = 2 * Math.PI * radius;
-    const chartOptions = {
+    const doughnutOptions = {
+        cutout: "80%",
         responsive: true,
-        maintainAspectRatio: false,
         plugins: {
             legend: {
                 display: false,
             },
-            tooltip: {
-                backgroundColor: '#1A1A25',
-                titleColor: '#119BD7',
-                bodyColor: '#fff',
-                borderColor: '#119BD7',
-                borderWidth: 1,
-                padding: 12,
-                displayColors: false,
-                callbacks: {
-                    title: function (context: any) {
-                        const index = context[0].dataIndex;
-                        return defectsStats?.daily_stats[index].date || '';
-                    },
-                    label: function (context: any) {
-                        return `Дефектов: ${context.parsed.y}`;
-                    }
-                }
-            }
         },
-        scales: {
-            x: {
-                grid: {
-                    display: false,
-                },
-                border: {
-                    display: false,
-                },
-                ticks: {
-                    color: '#6B7280',
-                    font: {
-                        size: 12,
-                    }
-                }
-            },
-            y: {
-                grid: {
-                    color: '#2A2A35',
-                    drawBorder: false,
-                },
-                border: {
-                    display: false,
-                },
-                ticks: {
-                    color: '#6B7280',
-                    font: {
-                        size: 12,
-                    },
-                    stepSize: 10,
-                }
-            }
-        }
     };
-    const mediumCircle = {
-        cx: 88,
-        cy: 88,
-        r: 62
-    };
+
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
             <Image
@@ -157,7 +55,6 @@ export default function Stats() {
                 className="absolute right-0 z-0 size-64 md:size-96 bottom-0 pointer-events-none opacity-50"
             />
             <Header/>
-
             <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
                 <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg mb-4 sm:mb-6">
                     <div className="text-xs sm:text-sm text-gray-500 mb-2">
@@ -170,147 +67,105 @@ export default function Stats() {
                 </div>
 
                 {loading ? (
-                    <div
-                        className="bg-[#1A1A25] p-6 rounded-lg flex justify-center items-center min-h-[300px] sm:min-h-[400px]">
+                    <div className="bg-[#1A1A25] p-6 rounded-lg flex justify-center items-center min-h-[300px] sm:min-h-[400px]">
                         <div className="flex items-center gap-3">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
                             <span className="text-gray-400 text-sm sm:text-base">Загрузка статистики...</span>
                         </div>
                     </div>
-                ) : stats ? (
-                    <>
-                        <div className="bg-[#1A1A25] p-4 sm:p-6 md:p-8 rounded-lg mb-4 sm:mb-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 md:gap-12">
-                                <div className="flex flex-col items-center">
-                                    <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 mb-4 sm:mb-6">
-                                        <svg className="w-full h-full transform -rotate-90">
-                                            <circle
-                                                cx="50%"
-                                                cy="50%"
-                                                r="35%"
-                                                stroke="#2A2A35"
-                                                strokeWidth="20"
-                                                fill="none"
-                                                className="sm:stroke-[22] md:stroke-[24]"
-                                            />
-                                            <circle
-                                                cx="50%"
-                                                cy="50%"
-                                                r="35%"
-                                                stroke="#119BD7"
-                                                strokeWidth="20"
-                                                fill="none"
-                                                strokeDasharray={`${(processedPercentage / 100) * (2 * Math.PI * 67)} ${2 * Math.PI * 67}`}
-                                                strokeLinecap="round"
-                                                className="sm:stroke-[22] md:stroke-[24]"
-                                            />
-                                        </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                           <span className="text-xl sm:text-2xl font-bold text-white">
-                                                {processedPercentage}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-2">Обработано</h3>
-                                    <p className="text-gray-400 text-xs sm:text-sm text-center">среди всех
-                                        изображений</p>
-                                </div>
-
-                                <div className="flex flex-col items-center">
-                                    <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 mb-4 sm:mb-6">
-                                        <svg className="w-full h-full transform -rotate-90">
-                                            <circle
-                                                cx="50%"
-                                                cy="50%"
-                                                r="35%"
-                                                stroke="#2A2A35"
-                                                strokeWidth="20"
-                                                fill="none"
-                                                className="sm:stroke-[22] md:stroke-[24]"
-                                            />
-                                            <circle
-                                                cx="50%"
-                                                cy="50%"
-                                                r="35%"
-                                                stroke="#119BD7"
-                                                strokeWidth="20"
-                                                fill="none"
-                                                strokeDasharray={`${(stats.damage_percentage / 100) * (2 * Math.PI * 67)} ${2 * Math.PI * 67}`}
-                                                strokeLinecap="round"
-
-                                                className="sm:stroke-[22] md:stroke-[24]"
-                                            />
-                                        </svg>
-                                        <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-xl sm:text-2xl font-bold text-white">
-                {Math.min(100, stats.damage_percentage)}%
-            </span>
-                                        </div>
-                                    </div>
-                                    <h3 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-2">Дефектов</h3>
-                                    <p className="text-gray-400 text-xs sm:text-sm text-center">Обнаружено</p>
-                                </div>
-
-                            </div>
-                        </div>
-
-
-                        <div className="bg-[#1A1A25] rounded-lg mb-4 sm:mb-6 overflow-hidden relative">
-                            <video
-                                autoPlay
-                                loop
-                                muted
-                                playsInline
-                                className="absolute inset-0 w-full h-full object-cover opacity-10 pointer-events-none"
-                            >
-                                <source src="https://cit.gov.ru/v/3.mp4" type="video/mp4"/>
-                            </video>
-                            <div className="relative p-4 sm:p-6 md:p-8 z-10">
-                                <div
-                                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <div>
-                                        <h4 className="text-xs sm:texdefectsPercentage t-sm font-semibold text-gray-400 mb-1 sm:mb-2">KPI</h4>
-                                        <p className="text-xs text-gray-500">сколько изображений обработано</p>
-                                    </div>
-                                    <div className="text-4xl sm:text-5xl font-bold text-[#119BD7]">{stats.total}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg ">
-                                <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Всего изображений
-                                </div>
-                                <div className="text-2xl sm:text-3xl font-bold text-white">{stats.total}</div>
-                            </div>
-
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg">
-                                <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Обработано</div>
-                                <div className="text-2xl sm:text-3xl font-bold text-white">{stats.processed}</div>
-                            </div>
-
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg sm:col-span-2 lg:col-span-1">
-                                <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Не обработано</div>
-                                <div className="text-2xl sm:text-3xl font-bold text-white">{stats.not_processed}</div>
-                            </div>
-                        </div>
-                        {chartData && (
-                            <div className="bg-[#1A1A25] mt-6 p-4 sm:p-6 md:p-8 rounded-lg mb-4 sm:mb-6">
-                                <h2 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-4 sm:mb-6">Продуктивность</h2>
-                                <div className="w-full h-64 sm:h-80 md:h-96">
-                                    <Line data={chartData} options={chartOptions}/>
-                                </div>
-                                <div className="mt-4 text-xs sm:text-sm text-gray-400 text-center">
-                                    Кол-во выявленных дефектов
-                                </div>
-                            </div>
-                        )}
-                    </>
-
-
                 ) : (
-                    <div className="bg-[#1A1A25] p-6 rounded-lg text-center text-gray-400">
-                        Не удалось загрузить статистику
+                    <div className="space-y-4">
+                        {batches.map(batch => (
+                            <div
+                                key={batch.batch_id}
+                                className={`bg-[#1A1A25] p-4 sm:p-6 rounded-lg cursor-pointer transition-all border-l-4 ${openedBatchId === batch.batch_id ? "border-[#119BD7]" : "border-transparent"}`}
+                                onClick={() => setOpenedBatchId(openedBatchId === batch.batch_id ? null : batch.batch_id)}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-lg font-bold text-[#119BD7]">{batch.batch_name || `Проект ${batch.batch_id}`}</h2>
+                                        <div className="text-xs text-gray-400">ID: {batch.batch_id}</div>
+                                    </div>
+                                    <div className="flex gap-6">
+                                        <div>
+                                            <div className="text-xs text-gray-400">Всего</div>
+                                            <div className="text-white font-bold">{batch.total}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-400">Обработано</div>
+                                            <div className="text-white font-bold">{batch.processed}</div>
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-gray-400">Дефектов</div>
+                                            <div className="text-white font-bold">{batch.images_with_damage}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {openedBatchId === batch.batch_id && (
+                                    <>
+                                        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-8">
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-36 h-36 sm:w-44 sm:h-44 relative">
+                                                    <Doughnut
+                                                        data={{
+                                                            labels: ["Обработано", "Не обработано"],
+                                                            datasets: [
+                                                                {
+                                                                    data: [batch.processed, batch.total - batch.processed],
+                                                                    backgroundColor: ["#119BD7", "#2A2A35"],
+                                                                    borderWidth: 0,
+                                                                },
+                                                            ],
+                                                        }}
+                                                        options={doughnutOptions}
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="text-xl sm:text-2xl font-bold text-white">
+                                                            {Math.round((batch.processed / batch.total) * 100)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-lg sm:text-xl font-bold text-[#119BD7] my-2">Обработано</div>
+                                                <div className="text-gray-400 text-xs text-center">от всех изображений</div>
+                                            </div>
+                                            <div className="flex flex-col items-center">
+                                                <div className="w-36 h-36 sm:w-44 sm:h-44 relative">
+                                                    <Doughnut
+                                                        data={{
+                                                            labels: ["С дефектами", "Без дефектов"],
+                                                            datasets: [
+                                                                {
+                                                                    data: [batch.damage_percentage, 100 - batch.damage_percentage],
+                                                                    backgroundColor: ["#FF6978", "#2A2A35"],
+                                                                    borderWidth: 0,
+                                                                },
+                                                            ],
+                                                        }}
+                                                        options={doughnutOptions}
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <span className="text-xl sm:text-2xl font-bold text-white">
+                                                            {Math.round(batch.damage_percentage)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-lg sm:text-xl font-bold text-[#FF6978] my-2">Дефектов</div>
+                                                <div className="text-gray-400 text-xs text-center">процент дефектных</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end mt-8">
+                                            <button
+                                                className="px-4 sm:px-6 py-2 sm:py-3 rounded-full border border-[#119BD7] text-[#119BD7] font-medium flex items-center justify-center gap-2 text-sm sm:text-base hover:bg-[#119BD7] hover:text-white transition-colors"
+                                                onClick={() => router.push(`/batch/${batch.batch_id}`)}
+                                            >
+                                                Перейти к батчу
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>

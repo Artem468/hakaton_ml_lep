@@ -10,6 +10,7 @@ import {FiTrash2} from "react-icons/fi";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
+import {useRouter} from "next/navigation";
 
 interface Project {
     id: number;
@@ -63,9 +64,17 @@ export default function AllProject() {
             const params = new URLSearchParams();
             params.append("page", page.toString());
             params.append("size", PAGE_SIZE.toString());
-
             if (dateRange.start) params.append("date_from", dateRange.start);
-            if (dateRange.end) params.append("date_to", dateRange.end);
+            if (dateRange.end) {
+                let endDate = dateRange.end;
+                if (dateRange.start && dateRange.start === dateRange.end) {
+                    const d = new Date(endDate);
+                    d.setDate(d.getDate() + 1);
+                    endDate = d.toISOString().split('T')[0];
+                }
+                params.append("date_to", endDate);
+            }
+
 
             const query = params.toString() ? `?${params.toString()}` : "";
             const url = `vision/batches/${query}`;
@@ -98,9 +107,14 @@ export default function AllProject() {
     };
 
     const handleApplyFilters = () => {
+        if (dateRange.start && dateRange.end && dateRange.start > dateRange.end) {
+            toast.error("Начальная дата не может быть позже конечной!");
+            return;
+        }
         setCurrentPage(1);
         setShowDateRangePicker(false);
     };
+
 
     const handleResetFilters = () => {
         setDateRange({start: "", end: ""});
@@ -133,37 +147,37 @@ export default function AllProject() {
     };
 
     const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
+        if (!projectToDelete) return;
 
-    setIsDeleting(true);
-    try {
-        const response = await apiFetch(`vision/batches/delete/${projectToDelete.id}/`, {
-            method: "DELETE",
-        }).catch((error) => {
-            if (error.message?.includes("JSON") || error.message?.includes("204")) {
-                return { ok: true, status: 204 };
+        setIsDeleting(true);
+        try {
+            const response = await apiFetch(`vision/batches/delete/${projectToDelete.id}/`, {
+                method: "DELETE",
+            }).catch((error) => {
+                if (error.message?.includes("JSON") || error.message?.includes("204")) {
+                    return {ok: true, status: 204};
+                }
+                throw error;
+            });
+
+            toast.success(`Проект "${projectToDelete.name}" успешно удален`);
+            closeDeleteModal();
+
+            const isLastItemOnPage = projects.length === 1;
+            const isNotFirstPage = currentPage > 1;
+
+            if (isLastItemOnPage && isNotFirstPage) {
+                setCurrentPage(prev => prev - 1);
+            } else {
+                await fetchProjects(currentPage);
             }
-            throw error;
-        });
-
-        toast.success(`Проект "${projectToDelete.name}" успешно удален`);
-        closeDeleteModal();
-
-        const isLastItemOnPage = projects.length === 1;
-        const isNotFirstPage = currentPage > 1;
-
-        if (isLastItemOnPage && isNotFirstPage) {
-            setCurrentPage(prev => prev - 1);
-        } else {
-            await fetchProjects(currentPage);
+        } catch (error) {
+            console.error("Ошибка при удалении проекта:", error);
+            toast.error("Не удалось удалить проект");
+        } finally {
+            setIsDeleting(false);
         }
-    } catch (error) {
-        console.error("Ошибка при удалении проекта:", error);
-        toast.error("Не удалось удалить проект");
-    } finally {
-        setIsDeleting(false);
-    }
-};
+    };
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -173,7 +187,7 @@ export default function AllProject() {
             year: "numeric",
         });
     };
-
+    const router = useRouter();
     const displayDateRange =
         dateRange.start && dateRange.end
             ? `${formatDate(dateRange.start)} - ${formatDate(dateRange.end)}`
@@ -337,7 +351,7 @@ export default function AllProject() {
                                     </th>
                                     <th scope="col"
                                         className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                        Действия
+
                                     </th>
                                 </tr>
                                 </thead>
@@ -360,7 +374,11 @@ export default function AllProject() {
                                     </tr>
                                 ) : (
                                     projects.map((project, index) => (
-                                        <tr key={project.id} className="hover:bg-[#29293D] transition-colors">
+                                        <tr
+                                            key={project.id}
+                                            className="hover:bg-[#29293D] transition-colors cursor-pointer"
+                                            onClick={() => router.push(`/batch/${project.id}?name=${encodeURIComponent(project.name)}`)}
+                                        >
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
                                                 {String(getItemNumber(index)).padStart(2, "0")}
                                             </td>
@@ -380,16 +398,11 @@ export default function AllProject() {
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div className="flex items-center gap-3">
-                                                    <Link
-                                                        href={`/batch/${project.id}?name=${encodeURIComponent(
-                                                            project.name
-                                                        )}`}
-                                                        className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
-                                                    >
-                                                        Подробнее
-                                                    </Link>
                                                     <button
-                                                        onClick={(e) => openDeleteModal(project, e)}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            openDeleteModal(project, e);
+                                                        }}
                                                         className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                                         title="Удалить проект"
                                                     >
@@ -457,12 +470,7 @@ export default function AllProject() {
                                         </div>
                                     </div>
 
-                                    <Link
-                                        href={`/batch/${project.id}?name=${encodeURIComponent(project.name)}`}
-                                        className="block w-full text-center px-4 py-2 bg-[#119BD7]/20 border border-[#119BD7] text-[#119BD7] rounded-lg font-medium hover:bg-[#119BD7] hover:text-white transition-colors text-sm"
-                                    >
-                                        Подробнее →
-                                    </Link>
+
                                 </div>
                             ))
                         )}
@@ -524,7 +532,7 @@ export default function AllProject() {
                             Вы уверены, что хотите удалить проект
                         </p>
                         <p className="text-[#119BD7] font-semibold mb-4">
-                            "{projectToDelete.name}"?
+                            {projectToDelete.name}
                         </p>
                         <p className="text-gray-500 text-sm mb-6">
                             Это действие нельзя отменить. Все фотографии и результаты анализа будут удалены.
