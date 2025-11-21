@@ -10,7 +10,6 @@ from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from ultralytics import YOLO
 
 from .filters import BatchFilter
 from .models import AiModel, Batch, LepImage
@@ -19,7 +18,10 @@ from .serializers import (
     BatchListSerializer,
     LepImageSerializer,
     InitUploadSerializer,
-    ConfirmUploadSerializer, BatchStatusSerializer, DeleteBatchSerializer, DeleteImageSerializer,
+    ConfirmUploadSerializer,
+    BatchStatusSerializer,
+    DeleteBatchSerializer,
+    DeleteImageSerializer,
 )
 from .tasks import process_image_task
 from .utils import make_file_key
@@ -46,8 +48,8 @@ class BatchPagination(PageNumberPagination):
     tags=["Обработка и отдача фото"],
     summary="Список наборов фото",
     description=(
-            "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
-            "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
+        "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
+        "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
     ),
     parameters=[
         OpenApiParameter(name="page", type=int, description="Номер страницы"),
@@ -92,7 +94,7 @@ class BatchDetailView(generics.ListAPIView):
     pagination_class = BatchDetailPagination
 
     def get_queryset(self):
-        batch_id = self.kwargs.get('pk')
+        batch_id = self.kwargs.get("pk")
         return LepImage.objects.filter(batch_id=batch_id)
 
     @extend_schema(operation_id="batch_detail")
@@ -105,12 +107,12 @@ class InitUploadAPIView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Создаёт batch и возвращает ключи и pre-signed URL для загрузки картинок",
         description=(
-                "Создаёт новый набор изображений (*batch*) и генерирует ключи "
-                "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
-                "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
-                "**На вход:** список оригинальных имён файлов.\n\n"
-                "**На выход:** `batch_id`, список созданных объектов `LepImage` "
-                "с полями `image_id`, `file_key` и `upload_url`."
+            "Создаёт новый набор изображений (*batch*) и генерирует ключи "
+            "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
+            "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
+            "**На вход:** список оригинальных имён файлов.\n\n"
+            "**На выход:** `batch_id`, список созданных объектов `LepImage` "
+            "с полями `image_id`, `file_key` и `upload_url`."
         ),
         request=InitUploadSerializer,
         responses={
@@ -145,7 +147,6 @@ class InitUploadAPIView(APIView):
         serializer.is_valid(raise_exception=True)
 
         batch_name = serializer.validated_data["batch_name"]
-
         batch = Batch.objects.create(name=batch_name)
 
         response_files = []
@@ -185,9 +186,9 @@ class ConfirmUploadAPIView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Подтверждение загрузки batch",
         description=(
-                "После того, как клиент загрузил все файлы через pre-signed URL, "
-                "эта ручка проверяет наличие файлов и помечает их как загруженные. "
-                "Также запускается прогон выбранной модели ИИ по новым изображениям."
+            "После того, как клиент загрузил все файлы через pre-signed URL, "
+            "эта ручка проверяет наличие файлов и помечает их как загруженные. "
+            "Также запускается прогон выбранной модели ИИ по новым изображениям."
         ),
         request=ConfirmUploadSerializer,
         responses={
@@ -219,17 +220,23 @@ class ConfirmUploadAPIView(APIView):
                 {"detail": "Batch не найден"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        try:
+            AiModel.objects.get(id=model_id)
+        except AiModel.DoesNotExist:
+            return Response(
+                {"detail": "Модель не найдена"}, status=status.HTTP_404_NOT_FOUND
+            )
+
         s3 = settings.S3_CLIENT_PRIVATE
-        model_obj = AiModel.objects.get(id=model_id)
-        model = YOLO(model_obj.model_file.path)
         confirmed_count = 0
+
         for image in batch.lepimage_set.all():
             try:
                 s3.head_object(
                     Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=image.file_key
                 )
                 confirmed_count += 1
-                process_image_task.delay(image.file_key, model)
+                process_image_task.delay(image.file_key, model_id)
             except s3.exceptions.ClientError:
                 continue
 
@@ -255,25 +262,30 @@ class BatchImagesStatsView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Процент обработанных фотографий от общего количества",
         description="Процент обработанных фотографий от общего количества",
-        responses={200: {"total": "integer", "processed": "integer", "not_processed": "integer"}},
+        responses={
+            200: {
+                "total": "integer",
+                "processed": "integer",
+                "not_processed": "integer",
+            }
+        },
     )
     def get(self, request):
         total = LepImage.objects.count()
         processed = LepImage.objects.filter(detection_result__isnull=False).count()
         not_processed = total - processed
 
-        return Response({
-            "total": total,
-            "processed": processed,
-            "not_processed": not_processed
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {"total": total, "processed": processed, "not_processed": not_processed},
+            status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(
     tags=["Обработка и отдача фото"],
     summary="Удаление набора фото",
     description="Удаляет набор фото и файлы из бакета",
-    responses={204: None}
+    responses={204: None},
 )
 class BatchDeleteView(generics.DestroyAPIView):
     queryset = Batch.objects.all()
@@ -284,7 +296,7 @@ class BatchDeleteView(generics.DestroyAPIView):
     tags=["Обработка и отдача фото"],
     summary="Удалить конкретное изображение",
     description="Удаляет конкретное фото и файлы из бакета",
-    responses={204: None}
+    responses={204: None},
 )
 class ImageDeleteView(generics.DestroyAPIView):
     queryset = LepImage.objects.all()

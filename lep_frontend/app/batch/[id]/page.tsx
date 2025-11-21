@@ -2,7 +2,7 @@
 
 import React, {useEffect, useState, useRef} from "react";
 import Image from "next/image";
-import {apiFetch} from "@/app/api/api";
+import {apiFetch, BASE_MINI} from "@/app/api/api";
 import backImage from "@/app/assets/backimage.svg";
 import logo from "@/app/assets/logo.svg";
 import Link from "next/link";
@@ -540,7 +540,7 @@ export default function ProjectPage() {
                                 }`}
                             >
                                 <Image
-                                    src={`http://127.0.0.1:9000/ml-media/${item.preview}`}
+                                    src={`${BASE_MINI}ml-media/${item.preview}`}
                                     alt="photo"
                                     fill
                                     className="object-cover"
@@ -568,7 +568,7 @@ export default function ProjectPage() {
                             <div className="lg:col-span-1 space-y-4">
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
                                     <Image
-                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.preview}`}
+                                        src={`${BASE_MINI}ml-media/${currentPhoto.preview}`}
                                         alt="Оригинал"
                                         width={400}
                                         height={300}
@@ -579,7 +579,7 @@ export default function ProjectPage() {
                                 </div>
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
                                     <Image
-                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.result}`}
+                                        src={`${BASE_MINI}ml-media/${currentPhoto.result}`}
                                         alt="С разметкой"
                                         width={400}
                                         height={300}
@@ -697,7 +697,7 @@ export default function ProjectPage() {
                                     <div className="flex gap-3 mt-6">
                                         <button
                                             onClick={() => downloadImage(
-                                                `http://127.0.0.1:9000/ml-media/${currentPhoto.file_key}`,
+                                                `${BASE_MINI}ml-media/${currentPhoto.file_key}`,
                                                 `original_${selectedIndex + 1}.jpg`
                                             )}
                                             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors"
@@ -711,7 +711,7 @@ export default function ProjectPage() {
                                         </button>
                                         <button
                                             onClick={() => downloadImage(
-                                                `http://127.0.0.1:9000/ml-media/${currentPhoto.result}`,
+                                                `${BASE_MINI}ml-media/${currentPhoto.result}`,
                                                 `processed_${selectedIndex + 1}.jpg`
                                             )}
                                             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
@@ -770,7 +770,7 @@ export default function ProjectPage() {
                                         <td className="py-4 px-4">
                                             <div className="w-16 h-16 relative rounded-lg overflow-hidden">
                                                 <Image
-                                                    src={`http://127.0.0.1:9000/ml-media/${item.preview}`}
+                                                    src={`${BASE_MINI}ml-media/${item.preview}`}
                                                     alt={`thumb-${index}`}
                                                     fill
                                                     unoptimized

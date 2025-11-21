@@ -50,12 +50,19 @@ services:
     networks:
       - app-network
 
+
   celery:
     container_name: celery_worker
     build:
       context: ./ml_backend
       dockerfile: Dockerfile
-    command: celery -A ml_backend worker --loglevel=INFO
+    # параметры оптимизации
+    command: >
+      celery -A ml_backend worker 
+      --loglevel=INFO 
+      --concurrency=2 
+      --prefetch-multiplier=1 
+      --max-tasks-per-child=50
     volumes:
       - ./ml_backend:/app
       - static_volume:/app/static
@@ -69,6 +76,15 @@ services:
     restart: always
     networks:
       - app-network
+    # Ограничение ресурсов (опционально, но рекомендуется)
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'      # Максимум 2 CPU
+          memory: 4G       # Максимум 4GB RAM
+        reservations:
+          cpus: '1.0'      # Минимум 1 CPU
+          memory: 2G       # Минимум 2GB RAM
 
   minio:
     image: minio/minio
