@@ -143,7 +143,9 @@ class DeleteBatchSerializer(serializers.ModelSerializer):
         fields = ['id']
 
 
-class DeleteImageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = LepImage
-        fields = ['id']
+class BulkDeleteImageSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False,
+        help_text="Список ID изображений для удаления"
+    )

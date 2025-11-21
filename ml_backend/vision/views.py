@@ -22,7 +22,7 @@ from .serializers import (
     ConfirmUploadSerializer,
     BatchStatusSerializer,
     DeleteBatchSerializer,
-    DeleteImageSerializer,
+    BulkDeleteImageSerializer,
 )
 from .tasks import process_image_task
 from .utils import make_file_key
@@ -49,8 +49,8 @@ class BatchPagination(PageNumberPagination):
     tags=["Обработка и отдача фото"],
     summary="Список наборов фото",
     description=(
-        "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
-        "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
+            "Возвращает список наборов фото с возможностью фильтрации по имени и дате.\n"
+            "Для каждого набора возвращается количество фото и результаты ИИ для всех фото."
     ),
     parameters=[
         OpenApiParameter(name="page", type=int, description="Номер страницы"),
@@ -108,12 +108,12 @@ class InitUploadAPIView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Создаёт batch и возвращает ключи и pre-signed URL для загрузки картинок",
         description=(
-            "Создаёт новый набор изображений (*batch*) и генерирует ключи "
-            "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
-            "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
-            "**На вход:** список оригинальных имён файлов.\n\n"
-            "**На выход:** `batch_id`, список созданных объектов `LepImage` "
-            "с полями `image_id`, `file_key` и `upload_url`."
+                "Создаёт новый набор изображений (*batch*) и генерирует ключи "
+                "и pre-signed URL для прямой загрузки файлов в MinIO.\n\n"
+                "**Важно:** Django сам файл не принимает — загрузка происходит напрямую в MinIO.\n\n"
+                "**На вход:** список оригинальных имён файлов.\n\n"
+                "**На выход:** `batch_id`, список созданных объектов `LepImage` "
+                "с полями `image_id`, `file_key` и `upload_url`."
         ),
         request=InitUploadSerializer,
         responses={
@@ -187,9 +187,9 @@ class ConfirmUploadAPIView(APIView):
         tags=["Обработка и отдача фото"],
         summary="Подтверждение загрузки batch",
         description=(
-            "После того, как клиент загрузил все файлы через pre-signed URL, "
-            "эта ручка проверяет наличие файлов и помечает их как загруженные. "
-            "Также запускается прогон выбранной модели ИИ по новым изображениям."
+                "После того, как клиент загрузил все файлы через pre-signed URL, "
+                "эта ручка проверяет наличие файлов и помечает их как загруженные. "
+                "Также запускается прогон выбранной модели ИИ по новым изображениям."
         ),
         request=ConfirmUploadSerializer,
         responses={
@@ -299,10 +299,30 @@ class BatchDeleteView(generics.DestroyAPIView):
 
 @extend_schema(
     tags=["Обработка и отдача фото"],
-    summary="Удалить конкретное изображение",
-    description="Удаляет конкретное фото и файлы из бакета",
-    responses={204: None},
+    summary="Удалить несколько изображений",
+    description="Удаляет список фотографий по их ID",
+    request=BulkDeleteImageSerializer,
+    responses={
+        204: None,
+        400: "Ошибка валидации (например, пустой список)"
+    },
 )
-class ImageDeleteView(generics.DestroyAPIView):
+class ImageDeleteView(generics.GenericAPIView):
     queryset = LepImage.objects.all()
-    serializer_class = DeleteImageSerializer
+    serializer_class = BulkDeleteImageSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ids_to_delete = serializer.validated_data['ids']
+
+        deleted_count, _ = self.get_queryset().filter(id__in=ids_to_delete).delete()
+
+        if deleted_count == 0:
+            return Response(
+                {"detail": "Изображения с указанными ID не найдены."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
