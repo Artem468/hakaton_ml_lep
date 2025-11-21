@@ -1,7 +1,9 @@
 import os
 import tempfile
 from io import BytesIO
+
 from PIL import Image
+from PIL.ExifTags import GPSTAGS, IFD
 from celery import shared_task
 from django.conf import settings
 from ultralytics import YOLO
@@ -9,7 +11,77 @@ from ultralytics import YOLO
 from .models import LepImage, AiModel
 
 
-@shared_task
+def dms_to_decimal(dms, ref):
+    """
+    Конвертирует координаты из DMS (градусы, минуты, секунды) в десятичный формат.
+
+    Args:
+        dms: tuple из (градусы, минуты, секунды)
+        ref: направление ('N', 'S', 'E', 'W')
+
+    Returns:
+        float: координата в десятичном формате
+    """
+    degrees = float(dms[0])
+    minutes = float(dms[1])
+    seconds = float(dms[2])
+
+    decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+
+    if ref in ['S', 'W']:
+        decimal = -decimal
+
+    return decimal
+
+
+def extract_gps_from_image(image):
+    """
+    Извлекает GPS координаты из EXIF данных изображения.
+
+    Args:
+        image: PIL Image объект
+
+    Returns:
+        dict: словарь с latitude и longitude или None
+    """
+    try:
+        exif = image.getexif()
+
+        if not exif:
+            return None
+
+        # Получаем GPS информацию
+        gps_info = exif.get_ifd(IFD.GPSInfo)
+
+        if not gps_info:
+            return None
+
+        # Извлекаем необходимые GPS теги
+        gps_latitude = gps_info.get(GPSTAGS.get('GPSLatitude'))
+        gps_latitude_ref = gps_info.get(GPSTAGS.get('GPSLatitudeRef'))
+        gps_longitude = gps_info.get(GPSTAGS.get('GPSLongitude'))
+        gps_longitude_ref = gps_info.get(GPSTAGS.get('GPSLongitudeRef'))
+
+        if gps_latitude and gps_latitude_ref and gps_longitude and gps_longitude_ref:
+            lat = dms_to_decimal(gps_latitude, gps_latitude_ref)
+            lon = dms_to_decimal(gps_longitude, gps_longitude_ref)
+
+            return {
+                'latitude': lat,
+                'longitude': lon
+            }
+
+        return None
+
+    except Exception as e:
+        print(f"Error extracting GPS: {str(e)}")
+        return None
+
+
+@shared_task(
+    soft_time_limit=300,
+    time_limit=360,
+)
 def process_image_task(file_key: str, model_id: int):
     """
     Обрабатывает изображение с помощью YOLO модели.
@@ -46,9 +118,10 @@ def process_image_task(file_key: str, model_id: int):
         image = Image.open(BytesIO(img_data))
         img_format = image.format if image.format else "JPEG"
 
+        gps_data = extract_gps_from_image(image)
+
         results = model.predict(tmp_path, imgsz=768, conf=0.25, save=False)
 
-        # Проверяем что результаты получены
         if not results or len(results) == 0:
             return {
                 "error": "No results from YOLO prediction",
@@ -90,7 +163,6 @@ def process_image_task(file_key: str, model_id: int):
             ACL="public-read",
         )
 
-        # Создаём и сохраняем превью
         preview = image.copy()
         preview.thumbnail((512, 512))
         preview_bytes = BytesIO()
@@ -109,23 +181,52 @@ def process_image_task(file_key: str, model_id: int):
             ACL="public-read",
         )
 
-        # Обновляем объект в БД
         image_obj.preview = preview_key
         image_obj.result = result_key
         image_obj.detection_result = detections
+
+        if gps_data:
+            image_obj.latitude = gps_data['latitude']
+            image_obj.longitude = gps_data['longitude']
+        else:
+            # СДЕЛАНО ИСКЛЮЧИТЕЛЬНО ДЛЯ ТЕСТА И ПОКАЗА ФУНКЦИОНАЛЬНОСТИ
+            # УБРАТЬ ДЛЯ ПРОДАКШЕНА
+            _gps = generate_random_russia_coordinates()
+            image_obj.latitude = _gps["latitude"]
+            image_obj.longitude = _gps["longitude"]
+
         image_obj.save()
 
-        return {
+        response_data = {
             "file_key": file_key,
             "detections_count": len(detections),
             "result_key": result_key,
             "preview_key": preview_key,
         }
 
+        return response_data
+
     except Exception as e:
         return {"error": f"Error during prediction: {str(e)}", "file_key": file_key}
 
     finally:
-        # Удаляем временный файл
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+
+
+
+
+def generate_random_russia_coordinates():
+    import random
+    """
+    Генерирует случайные GPS координаты в пределах РФ
+    """
+
+    latitude = random.uniform(53.0, 58.0)
+    longitude = random.uniform(35.0, 42.0)
+
+    return {
+        'latitude': round(latitude, 6),
+        'longitude': round(longitude, 6)
+    }
