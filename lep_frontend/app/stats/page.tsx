@@ -84,7 +84,6 @@ export default function Stats() {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <h2 className="text-lg font-bold text-[#119BD7]">{batch.batch_name || `Проект ${batch.batch_id}`}</h2>
-                                        <div className="text-xs text-gray-400">ID: {batch.batch_id}</div>
                                     </div>
                                     <div className="flex gap-6">
                                         <div>

@@ -31,9 +31,9 @@ interface ApiResponse {
 type ProcessingStatus = "not_processed" | "processing" | "completed" | "reviewed";
 
 const STATUS_LABELS: Record<ProcessingStatus, { label: string; color: string }> = {
-    not_processed: {label: "Не обработан", color: "bg-gray-500"},
+    not_processed: {label: "Создан", color: "bg-gray-500"},
     processing: {label: "В процессе", color: "bg-blue-500"},
-    completed: {label: "Завершен", color: "bg-yellow-500"},
+    completed: {label: "Обработан", color: "bg-yellow-500"},
     reviewed: {label: "Проверен", color: "bg-green-500"},
 };
 
@@ -436,6 +436,8 @@ export default function AllProject() {
                                 <div
                                     key={project.id}
                                     className="bg-[#1A1A25] p-4 rounded-lg border border-gray-800 hover:border-[#119BD7]/50 transition-all"
+                                    onClick={() => router.push(`/batch/${project.id}?name=${encodeURIComponent(project.name)}`)}
+
                                 >
                                     <div className="flex items-start justify-between mb-3">
                                         <div className="flex-1">
