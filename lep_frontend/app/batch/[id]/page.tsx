@@ -9,6 +9,8 @@ import {useParams, useSearchParams} from "next/navigation";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import Header from "@/app/component/Header";
+import {MdEdit} from "react-icons/md";
+
 
 interface DetectionObject {
     class: string;
@@ -80,7 +82,8 @@ export default function ProjectPage() {
     const markers = useRef<maplibregl.Marker[]>([]);
 
     const searchParams = useSearchParams();
-
+    const [editMode, setEditMode] = useState(false);
+    const [newName, setNewName] = useState(batchStatus?.name ?? "");
     const getBatchIdFromFileKey = (fileKey: string): string | null => {
         const match = fileKey.match(/batch_(\d+)\//);
         return match ? match[1] : null;
@@ -430,6 +433,32 @@ export default function ProjectPage() {
             });
         }
     };
+    const handleUpdate = async () => {
+        setLoading(true);
+        try {
+            await apiFetch(`vision/batch/update/${batchStatus.id}/`, {
+                method: "PATCH",
+                body: JSON.stringify({name: newName})
+            });
+            await loadInitialData();
+            setEditMode(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReview = async () => {
+        setLoading(true);
+        try {
+            await apiFetch(`vision/batch/update/${batchStatus.id}/`, {
+                method: "PATCH",
+                body: JSON.stringify({status: true})
+            });
+            await loadInitialData();
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
@@ -442,33 +471,108 @@ export default function ProjectPage() {
 
             <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
                 <div
-                    className="bg-[#1A1A25] flex flex-col lg:flex-row justify-between p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 gap-4">
+                    className="bg-[#1A1A25] flex flex-col lg:flex-row justify-between p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 gap-4 items-start lg:items-center">
                     <div>
-                        <div className="text-xs sm:text-sm text-gray-500 mb-2">
+
+                        <div className="text-xs sm:text-sm text-gray-500 mb-2 flex items-center gap-2">
                             <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
                                 Главная
-                            </Link>{" "}
-                            / {batchStatus.name}
+                            </Link>
+                            <span>/</span>
+                            <span>
+          {
+              (!batchStatus?.name || batchStatus.name.trim() === "")
+                  ? "БЕЗ НАЗВАНИЯ"
+                  : batchStatus.name
+          }
+        </span>
                         </div>
-                        <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
+
+                        <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7] mb-2 flex items-center gap-2">
+                            {editMode ? (
+                                <form onSubmit={e => {
+                                    e.preventDefault();
+                                    handleUpdate();
+                                }} className="flex items-center gap-2">
+                                    <input
+                                        className="bg-[#222232] text-white border border-[#119BD7] rounded px-2 py-1 text-xl max-w-[220px]"
+                                        value={newName}
+                                        onChange={e => setNewName(e.target.value)}
+                                        autoFocus
+                                        maxLength={50}
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={loading}
+                                        className="px-2 py-1 rounded bg-[#119BD7] text-white font-medium text-sm"
+                                    >Сохранить
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="px-2 py-1 text-sm text-gray-400 hover:text-gray-200"
+                                        onClick={() => setEditMode(false)}
+                                    >Отмена
+                                    </button>
+                                </form>
+                            ) : (
+                                <>
+                                    {
+                                        (!batchStatus?.name || batchStatus.name.trim() === "")
+                                            ? "БЕЗ НАЗВАНИЯ"
+                                            : batchStatus.name
+                                    }
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setEditMode(true);
+                                            setNewName(batchStatus?.name ?? "");
+                                        }}
+                                        className="ml-1 hover:bg-[#222232] rounded p-1 flex items-center"
+                                    >
+                                        <MdEdit className="w-5 h-5 text-[#119BD7]"/>
+                                    </button>
+                                </>
+                            )}
+                        </h1>
+
                         <div className="pt-0 lg:pt-4">
                             <div className="flex items-start">
                                 <div className="flex-1">
                                     <p className="text-white text-sm">
                                         Всего фотографий: {totalCount > 0 ? totalCount : photos.length} | Дефектов:{" "}
                                         <span className="text-red-400 font-semibold">
-                                        {defectCount}
-                                    </span>{" "}
+                {defectCount}
+              </span>
                                         {!hasMore && photos.length < totalCount && (
                                             <span className="text-gray-400">
-                                                (загружено {photos.length})
-                                            </span>
+                  (загружено {photos.length})
+                </span>
                                         )}
                                     </p>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    {batchStatus.processing_status !== "reviewed" && (
+                        <div className="flex flex-row gap-2 items-end lg:items-center w-full lg:w-auto justify-end">
+                            <button
+                                type="button"
+                                onClick={handleReview}
+                                disabled={loading}
+                                className={`
+        px-4 py-2 rounded-full border border-[#119BD7]
+        font-medium flex items-center gap-2
+        text-sm sm:text-base
+        text-[#119BD7] hover:bg-[#119BD7] hover:text-white 
+        transition-colors whitespace-nowrap
+      `}
+                            >
+                                Проверено
+                            </button>
+                        </div>
+                    )}
+
                 </div>
 
                 <div className="bg-[#1A1A25] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
