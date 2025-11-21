@@ -1,5 +1,5 @@
-export const BASE_URL = "http://127.0.0.1/api/"; //для апи
-export const BASE_MINI = "http://127.0.0.1:9000/"; //для файлохранилища
+export const BASE_URL = "https://nominally-huge-millipede.cloudpub.ru/api/"; //для апи
+export const BASE_MINI = "https://intangibly-tender-bobwhite.cloudpub.ru/"; //для файлохранилища
 
 export async function apiFetch<T>(
   endpoint: string,

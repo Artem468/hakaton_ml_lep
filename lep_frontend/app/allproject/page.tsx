@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import {apiFetch} from "@/app/api/api";
 import {VscSettings} from "react-icons/vsc";
 import {BiCalendar} from "react-icons/bi";
+import {FiTrash2} from "react-icons/fi";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
@@ -52,6 +53,9 @@ export default function AllProject() {
     const [totalCount, setTotalCount] = useState(0);
     const [nextPage, setNextPage] = useState<string | null>(null);
     const [previousPage, setPreviousPage] = useState<string | null>(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const fetchProjects = useCallback(async (page: number) => {
         setLoading(true);
@@ -115,6 +119,51 @@ export default function AllProject() {
             setCurrentPage(prev => prev - 1);
         }
     };
+
+    const openDeleteModal = (project: Project, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setProjectToDelete(project);
+        setShowDeleteModal(true);
+    };
+
+    const closeDeleteModal = () => {
+        setShowDeleteModal(false);
+        setProjectToDelete(null);
+    };
+
+    const handleDeleteProject = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    try {
+        const response = await apiFetch(`vision/batches/delete/${projectToDelete.id}/`, {
+            method: "DELETE",
+        }).catch((error) => {
+            if (error.message?.includes("JSON") || error.message?.includes("204")) {
+                return { ok: true, status: 204 };
+            }
+            throw error;
+        });
+
+        toast.success(`Проект "${projectToDelete.name}" успешно удален`);
+        closeDeleteModal();
+
+        const isLastItemOnPage = projects.length === 1;
+        const isNotFirstPage = currentPage > 1;
+
+        if (isLastItemOnPage && isNotFirstPage) {
+            setCurrentPage(prev => prev - 1);
+        } else {
+            await fetchProjects(currentPage);
+        }
+    } catch (error) {
+        console.error("Ошибка при удалении проекта:", error);
+        toast.error("Не удалось удалить проект");
+    } finally {
+        setIsDeleting(false);
+    }
+};
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -286,6 +335,10 @@ export default function AllProject() {
                                         className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
                                         Статус
                                     </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Действия
+                                    </th>
                                 </tr>
                                 </thead>
                                 <tbody className="bg-[#1A1A25] divide-y divide-gray-800">
@@ -326,14 +379,23 @@ export default function AllProject() {
                                                 {getStatusBadge(project.processing_status)}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <Link
-                                                    href={`/batch/${project.id}?name=${encodeURIComponent(
-                                                        project.name
-                                                    )}`}
-                                                    className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
-                                                >
-                                                    Подробнее
-                                                </Link>
+                                                <div className="flex items-center gap-3">
+                                                    <Link
+                                                        href={`/batch/${project.id}?name=${encodeURIComponent(
+                                                            project.name
+                                                        )}`}
+                                                        className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
+                                                    >
+                                                        Подробнее
+                                                    </Link>
+                                                    <button
+                                                        onClick={(e) => openDeleteModal(project, e)}
+                                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                                        title="Удалить проект"
+                                                    >
+                                                        <FiTrash2 size={18}/>
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -374,6 +436,13 @@ export default function AllProject() {
                                                 {project.name}
                                             </h3>
                                         </div>
+                                        <button
+                                            onClick={(e) => openDeleteModal(project, e)}
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-2 ml-2"
+                                            title="Удалить проект"
+                                        >
+                                            <FiTrash2 size={18}/>
+                                        </button>
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
@@ -446,6 +515,50 @@ export default function AllProject() {
                     </div>
                 </div>
             </div>
+
+            {showDeleteModal && projectToDelete && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-[#1A1A25] rounded-xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold text-white mb-4">Подтверждение удаления</h3>
+                        <p className="text-gray-400 mb-2">
+                            Вы уверены, что хотите удалить проект
+                        </p>
+                        <p className="text-[#119BD7] font-semibold mb-4">
+                            "{projectToDelete.name}"?
+                        </p>
+                        <p className="text-gray-500 text-sm mb-6">
+                            Это действие нельзя отменить. Все фотографии и результаты анализа будут удалены.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={closeDeleteModal}
+                                disabled={isDeleting}
+                                className="flex-1 px-4 py-2 border border-gray-600 text-gray-400 rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            >
+                                Отмена
+                            </button>
+                            <button
+                                onClick={handleDeleteProject}
+                                disabled={isDeleting}
+                                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {isDeleting ? (
+                                    <>
+                                        <div
+                                            className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Удаление...
+                                    </>
+                                ) : (
+                                    <>
+                                        <FiTrash2 size={16}/>
+                                        Удалить
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

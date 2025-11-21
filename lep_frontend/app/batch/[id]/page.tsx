@@ -436,10 +436,6 @@ export default function ProjectPage() {
                                     <span className="text-red-400 font-semibold">
                                         {defectCount}
                                     </span>{" "}
-                                    | Без дефектов:{" "}
-                                    <span className="text-green-400 font-semibold">
-                                        {photos.length - defectCount}
-                                    </span>
                                 </p>
                             </div>
                         </div>

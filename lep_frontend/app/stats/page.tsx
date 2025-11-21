@@ -6,6 +6,12 @@ import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
 import {apiFetch} from "@/app/api/api";
 import Link from "next/link";
+import dynamic from 'next/dynamic';
+import 'chart.js/auto';
+
+const Line = dynamic(() => import('react-chartjs-2').then((mod) => mod.Line), {
+    ssr: false,
+});
 
 interface Stats {
     total: number;
@@ -13,17 +19,35 @@ interface Stats {
     not_processed: number;
 }
 
+interface DailyStat {
+    date: string;
+    defect_count: number;
+    image_count: number;
+}
+
+interface DefectsStats {
+    daily_stats: DailyStat[];
+    total_defects: number;
+}
+
 export default function Stats() {
     const [stats, setStats] = useState<Stats | null>(null);
+    const [defectsStats, setDefectsStats] = useState<DefectsStats | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await apiFetch<Stats>("vision/batches/stats/", {
-                    method: "GET",
-                });
-                setStats(data);
+                const [statsData, defectsData] = await Promise.all([
+                    apiFetch<Stats>("vision/batches/stats/", {
+                        method: "GET",
+                    }),
+                    apiFetch<DefectsStats>("vision/defects/stats/", {
+                        method: "GET",
+                    })
+                ]);
+                setStats(statsData);
+                setDefectsStats(defectsData);
             } catch (error) {
                 console.error("Ошибка при загрузке статистики:", error);
             } finally {
@@ -36,6 +60,87 @@ export default function Stats() {
 
     const processedPercentage = stats ? Math.round((stats.processed / stats.total) * 100) : 0;
     const defectsPercentage = 68;
+
+    // Подготовка данных для графика
+    const chartData = defectsStats ? {
+        labels: defectsStats.daily_stats.map(stat => {
+            const date = new Date(stat.date);
+            return date.toLocaleDateString('ru-RU', { weekday: 'short' }).slice(0, 2);
+        }),
+        datasets: [{
+            label: 'Кол-во выявленных дефектов',
+            data: defectsStats.daily_stats.map(stat => stat.defect_count),
+            borderColor: '#119BD7',
+            backgroundColor: 'transparent',
+            tension: 0.4,
+            borderWidth: 3,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+            pointHoverBackgroundColor: '#119BD7',
+            pointHoverBorderColor: '#fff',
+            pointHoverBorderWidth: 2,
+        }]
+    } : null;
+
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false,
+            },
+            tooltip: {
+                backgroundColor: '#1A1A25',
+                titleColor: '#119BD7',
+                bodyColor: '#fff',
+                borderColor: '#119BD7',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                    title: function(context: any) {
+                        const index = context[0].dataIndex;
+                        return defectsStats?.daily_stats[index].date || '';
+                    },
+                    label: function(context: any) {
+                        return `Дефектов: ${context.parsed.y}`;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    display: false,
+                },
+                border: {
+                    display: false,
+                },
+                ticks: {
+                    color: '#6B7280',
+                    font: {
+                        size: 12,
+                    }
+                }
+            },
+            y: {
+                grid: {
+                    color: '#2A2A35',
+                    drawBorder: false,
+                },
+                border: {
+                    display: false,
+                },
+                ticks: {
+                    color: '#6B7280',
+                    font: {
+                        size: 12,
+                    },
+                    stepSize: 10,
+                }
+            }
+        }
+    };
 
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
@@ -138,6 +243,9 @@ export default function Stats() {
                             </div>
                         </div>
 
+
+
+
                         <div className="bg-[#1A1A25] rounded-lg mb-4 sm:mb-6 overflow-hidden relative">
                             <video
                                 autoPlay
@@ -160,22 +268,35 @@ export default function Stats() {
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg border-l-4 border-[#119BD7]">
+                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg ">
                                 <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Всего изображений</div>
                                 <div className="text-2xl sm:text-3xl font-bold text-white">{stats.total}</div>
                             </div>
 
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg border-l-4 border-green-500">
+                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg">
                                 <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Обработано</div>
                                 <div className="text-2xl sm:text-3xl font-bold text-white">{stats.processed}</div>
                             </div>
 
-                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg border-l-4 border-yellow-500 sm:col-span-2 lg:col-span-1">
+                            <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg sm:col-span-2 lg:col-span-1">
                                 <div className="text-xs sm:text-sm font-semibold text-gray-400 mb-2">Не обработано</div>
                                 <div className="text-2xl sm:text-3xl font-bold text-white">{stats.not_processed}</div>
                             </div>
                         </div>
+                        {chartData && (
+                            <div className="bg-[#1A1A25] mt-6 p-4 sm:p-6 md:p-8 rounded-lg mb-4 sm:mb-6">
+                                <h2 className="text-lg sm:text-xl font-bold text-[#119BD7] mb-4 sm:mb-6">Продуктивность</h2>
+                                <div className="w-full h-64 sm:h-80 md:h-96">
+                                    <Line data={chartData} options={chartOptions} />
+                                </div>
+                                <div className="mt-4 text-xs sm:text-sm text-gray-400 text-center">
+                                    Кол-во выявленных дефектов
+                                </div>
+                            </div>
+                        )}
                     </>
+
+
                 ) : (
                     <div className="bg-[#1A1A25] p-6 rounded-lg text-center text-gray-400">
                         Не удалось загрузить статистику
