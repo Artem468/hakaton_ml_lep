@@ -6,17 +6,17 @@ from celery import shared_task
 from django.conf import settings
 from ultralytics import YOLO
 
-from .models import AiModel, LepImage
+from .models import LepImage
 
 
 @shared_task
-def process_image_task(file_key: str, model_id: int):
+def process_image_task(file_key: str, model: YOLO):
     """
     Обрабатывает изображение с помощью YOLO модели.
 
     Args:
         file_key: Ключ файла в S3
-        model_id: ID модели в базе данных
+        model: Объект модели
     """
     s3_client = settings.S3_CLIENT_PRIVATE
     bucket = settings.AWS_STORAGE_BUCKET_NAME
@@ -27,30 +27,19 @@ def process_image_task(file_key: str, model_id: int):
         return {"error": f"Image with file_key={file_key} not found"}
 
     try:
-        model_obj = AiModel.objects.get(id=model_id)
-        model = YOLO(model_obj.model_file.path)
-    except AiModel.DoesNotExist:
-        return {"error": f"Model with id={model_id} not found"}
-
-    # Скачиваем изображение из S3
-    try:
         obj = s3_client.get_object(Bucket=bucket, Key=file_key)
         img_data = obj["Body"].read()
     except Exception as e:
         return {"error": f"Failed to load image from S3: {str(e)}"}
 
-    # ✅ ИСПРАВЛЕНИЕ: Сохраняем во временный файл
-    # PIL изображение из BytesIO не работает с YOLO
     with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as tmp_file:
         tmp_path = tmp_file.name
         tmp_file.write(img_data)
 
     try:
-        # Загружаем изображение для получения формата
         image = Image.open(BytesIO(img_data))
         img_format = image.format if image.format else "JPEG"
 
-        # Выполняем детекцию используя путь к файлу, а не PIL объект
         results = model.predict(tmp_path, imgsz=768, conf=0.25, save=False)
 
         # Проверяем что результаты получены
@@ -63,7 +52,6 @@ def process_image_task(file_key: str, model_id: int):
 
         r = results[0]
 
-        # Извлекаем результаты детекции
         detections = []
         if r.boxes is not None and len(r.boxes) > 0:
             labels = r.boxes.cls.cpu().numpy()
@@ -77,7 +65,6 @@ def process_image_task(file_key: str, model_id: int):
                     "bbox": box.tolist(),
                 })
 
-        # Создаём изображение с результатами детекции
         plotted_image_array = r.plot()
         plotted_image = Image.fromarray(plotted_image_array[..., ::-1])
 
@@ -85,7 +72,6 @@ def process_image_task(file_key: str, model_id: int):
         plotted_image.save(result_bytes, format=img_format)
         result_bytes.seek(0)
 
-        # Сохраняем результат в S3
         result_key = file_key.replace("uploads", "results")
         if result_key == file_key:
             result_key = f"results/{file_key}"

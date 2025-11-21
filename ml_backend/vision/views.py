@@ -10,6 +10,7 @@ from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from ultralytics import YOLO
 
 from .filters import BatchFilter
 from .models import AiModel, Batch, LepImage
@@ -229,14 +230,18 @@ class ConfirmUploadAPIView(APIView):
 
         s3 = settings.S3_CLIENT_PRIVATE
         confirmed_count = 0
-
+        try:
+            model_obj = AiModel.objects.get(id=model_id)
+            model = YOLO(model_obj.model_file.path)
+        except AiModel.DoesNotExist:
+            return {"error": f"Model with id={model_id} not found"}
         for image in batch.lepimage_set.all():
             try:
                 s3.head_object(
                     Bucket=settings.AWS_STORAGE_BUCKET_NAME, Key=image.file_key
                 )
                 confirmed_count += 1
-                process_image_task.delay(image.file_key, model_id)
+                process_image_task.delay(image.file_key, model)
             except s3.exceptions.ClientError:
                 continue
 
