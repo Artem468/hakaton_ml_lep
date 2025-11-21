@@ -322,12 +322,8 @@ class ImageDeleteView(generics.GenericAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@extend_schema(tags=["Обработка и отдача фото"])
 class BatchUpdateView(generics.UpdateAPIView):
-    """
-    PATCH /batch/update/{id}/
-
-    Обновляет Batch и возвращает presigned URLs для загрузки файлов.
-    """
     queryset = Batch.objects.all()
     serializer_class = BatchUpdateSerializer
     http_method_names = ['patch']
