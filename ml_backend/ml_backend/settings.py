@@ -172,7 +172,7 @@ WSGI_APPLICATION = "ml_backend.wsgi.application"
 
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
 
-AWS_S3_ENDPOINT_URL_PUBLIC = "http://127.0.0.1:9000"
+AWS_S3_ENDPOINT_URL_PUBLIC = "https://intangibly-tender-bobwhite.cloudpub.ru"
 AWS_S3_ENDPOINT_URL_PRIVATE = "http://minio:9000"
 AWS_ACCESS_KEY_ID = os.getenv("MINIO_ROOT_USER")
 AWS_SECRET_ACCESS_KEY = os.getenv("MINIO_ROOT_PASSWORD")
