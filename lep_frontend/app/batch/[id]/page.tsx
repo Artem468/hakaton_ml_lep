@@ -428,18 +428,9 @@ export default function ProjectPage() {
                             / {batchStatus.name}
                         </div>
                         <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
-                        <p className="text-xs sm:text-sm text-gray-400 mt-2">
-                            Всего фотографий: {photos.length}
-                        </p>
-                    </div>
-
-                    <div className="pt-0 lg:pt-4">
+                         <div className="pt-0 lg:pt-4">
                         <div className="flex items-start">
-                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                            <div className="flex-1">
-                                <span className="text-gray-400 text-xs sm:text-sm">
-                                    Статистика проекта:
-                                </span>
+                             <div className="flex-1">
                                 <p className="text-white text-sm">
                                     Всего фотографий: {photos.length} | Дефектов:{" "}
                                     <span className="text-red-400 font-semibold">
@@ -453,6 +444,9 @@ export default function ProjectPage() {
                             </div>
                         </div>
                     </div>
+                    </div>
+
+
                 </div>
 
                 <div className="bg-[#1A1A25] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
@@ -728,7 +722,7 @@ export default function ProjectPage() {
                                                 `${BASE_MINI}ml-media/${currentPhoto.result}`,
                                                 `processed_${selectedIndex + 1}.jpg`
                                             )}
-                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors text-sm"
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border-1 border-[#119BD7] text-[#119BD7]  font-semibold rounded-lg transition-colors text-sm"
                                         >
                                             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>

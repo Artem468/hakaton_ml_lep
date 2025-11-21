@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { apiFetch } from "@/app/api/api";
-import { VscSettings } from "react-icons/vsc";
-import { BiCalendar } from "react-icons/bi";
+import {apiFetch} from "@/app/api/api";
+import {VscSettings} from "react-icons/vsc";
+import {BiCalendar} from "react-icons/bi";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
@@ -29,10 +29,10 @@ interface ApiResponse {
 type ProcessingStatus = "not_processed" | "processing" | "completed" | "reviewed";
 
 const STATUS_LABELS: Record<ProcessingStatus, { label: string; color: string }> = {
-    not_processed: { label: "Не обработан", color: "bg-gray-500" },
-    processing: { label: "В процессе", color: "bg-blue-500" },
-    completed: { label: "Завершен", color: "bg-yellow-500" },
-    reviewed: { label: "Проверен", color: "bg-green-500" },
+    not_processed: {label: "Не обработан", color: "bg-gray-500"},
+    processing: {label: "В процессе", color: "bg-blue-500"},
+    completed: {label: "Завершен", color: "bg-yellow-500"},
+    reviewed: {label: "Проверен", color: "bg-green-500"},
 };
 
 const PAGE_SIZE = 20;
@@ -99,7 +99,7 @@ export default function AllProject() {
     };
 
     const handleResetFilters = () => {
-        setDateRange({ start: "", end: "" });
+        setDateRange({start: "", end: ""});
         setShowDateRangePicker(false);
         setCurrentPage(1);
     };
@@ -153,10 +153,10 @@ export default function AllProject() {
     const getDisplayRange = () => {
         const start = (currentPage - 1) * PAGE_SIZE + 1;
         const end = Math.min(start + projects.length - 1, totalCount);
-        return { start, end };
+        return {start, end};
     };
 
-    const { start, end } = getDisplayRange();
+    const {start, end} = getDisplayRange();
 
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
@@ -165,7 +165,7 @@ export default function AllProject() {
                 alt=""
                 className="absolute right-0 z-0 size-64 md:size-96 bottom-0 pointer-events-none opacity-50"
             />
-            <Header />
+            <Header/>
 
             <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
                 <div className="rounded-lg">
@@ -179,21 +179,24 @@ export default function AllProject() {
                         <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">Все проекты</h1>
                     </div>
 
-                    <div className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg items-center gap-4 sm:gap-5 flex flex-col mb-4 sm:mb-6 relative">
+                    <div
+                        className="bg-[#1A1A25] p-4 sm:p-6 rounded-lg items-center gap-4 sm:gap-5 flex flex-col mb-4 sm:mb-6 relative">
                         <button
                             onClick={() => setShowDateRangePicker(!showDateRangePicker)}
                             className="flex items-center gap-2 w-full justify-center hover:opacity-80 transition-opacity"
                         >
-                            <VscSettings size={28} className="text-[#119BD7] sm:w-9 sm:h-9" />
-                            <div className="flex-1 sm:w-11/12 flex justify-center p-2 sm:p-3 rounded-3xl text-sm sm:text-base text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
+                            <VscSettings size={28} className="text-[#119BD7] sm:w-9 sm:h-9"/>
+                            <div
+                                className="flex-1 sm:w-11/12 flex justify-center p-2 sm:p-3 rounded-3xl text-sm sm:text-base text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
                                 {displayDateRange}
                             </div>
                         </button>
 
                         {showDateRangePicker && (
-                            <div className="w-full sm:w-11/12 mt-2 sm:mt-4 p-4 sm:p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-4 sm:space-y-6 transition-all">
+                            <div
+                                className="w-full sm:w-11/12 mt-2 sm:mt-4 p-4 sm:p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-4 sm:space-y-6 transition-all">
                                 <h3 className="text-base sm:text-lg font-bold text-[#119BD7] flex items-center gap-2">
-                                    <BiCalendar size={20} className="sm:w-6 sm:h-6" />
+                                    <BiCalendar size={20} className="sm:w-6 sm:h-6"/>
                                     Выбор периода
                                 </h3>
 
@@ -231,26 +234,25 @@ export default function AllProject() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-700">
+                                <div
+                                    className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-gray-700">
                                     <button
                                         onClick={handleResetFilters}
-                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
-                                        hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
+                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35]
+                                        hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 rounded-full shadow-md"
                                     >
                                         Сбросить
                                     </button>
                                     <button
                                         onClick={() => setShowDateRangePicker(false)}
-                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
+                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-sm font-semibold rounded-full text-gray-300 bg-[#2A2A35]
                                         hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
                                     >
                                         Отмена
                                     </button>
                                     <button
                                         onClick={handleApplyFilters}
-                                        className="px-4 sm:px-5 py-2 sm:py-2.5 text-[#119BD7] font-semibold bg-[rgb(17,155,215,20%)] rounded-lg
-                                        hover:bg-[rgb(17,155,215,35%)] hover:scale-105 transition-all duration-200
-                                        border border-[#119BD7]/30 shadow-lg shadow-[#119BD7]/20"
+                                        className="inline-flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-[#119BD7] text-[#119BD7] rounded-full font-medium hover:bg-[#119BD7] hover:text-white transition-colors text-sm sm:text-base"
                                     >
                                         Применить фильтр
                                     </button>
@@ -263,76 +265,79 @@ export default function AllProject() {
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-800">
                                 <thead className="bg-[#1A1A25]">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            №
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Название
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Кол-во фото
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Дата создания
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Статус
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Действия
-                                        </th>
-                                    </tr>
+                                <tr>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        №
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Название
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Кол-во фото
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Дата создания
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Статус
+                                    </th>
+                                </tr>
                                 </thead>
                                 <tbody className="bg-[#1A1A25] divide-y divide-gray-800">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                                <div className="flex justify-center items-center">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
-                                                    <span className="ml-3">Загрузка проектов...</span>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            <div className="flex justify-center items-center">
+                                                <div
+                                                    className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
+                                                <span className="ml-3">Загрузка проектов...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : projects.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            Нет проектов для отображения
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    projects.map((project, index) => (
+                                        <tr key={project.id} className="hover:bg-[#29293D] transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                                                {String(getItemNumber(index)).padStart(2, "0")}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-bold text-white">
+                                                    {project.name}
                                                 </div>
                                             </td>
-                                        </tr>
-                                    ) : projects.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                                Нет проектов для отображения
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                                {project.photo_count}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                                {formatDate(project.uploaded_at)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {getStatusBadge(project.processing_status)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <Link
+                                                    href={`/batch/${project.id}?name=${encodeURIComponent(
+                                                        project.name
+                                                    )}`}
+                                                    className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
+                                                >
+                                                    Подробнее
+                                                </Link>
                                             </td>
                                         </tr>
-                                    ) : (
-                                        projects.map((project, index) => (
-                                            <tr key={project.id} className="hover:bg-[#29293D] transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
-                                                    {String(getItemNumber(index)).padStart(2, "0")}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-bold text-white">
-                                                        {project.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                                    {project.photo_count}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                                    {formatDate(project.uploaded_at)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {getStatusBadge(project.processing_status)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <Link
-                                                        href={`/batch/${project.id}?name=${encodeURIComponent(
-                                                            project.name
-                                                        )}`}
-                                                        className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
-                                                    >
-                                                        Подробнее →
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
+                                    ))
+                                )}
                                 </tbody>
                             </table>
                         </div>
@@ -342,7 +347,8 @@ export default function AllProject() {
                         {loading ? (
                             <div className="bg-[#1A1A25] p-6 rounded-lg text-center text-gray-500">
                                 <div className="flex justify-center items-center">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
+                                    <div
+                                        className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
                                     <span className="ml-3">Загрузка проектов...</span>
                                 </div>
                             </div>
@@ -377,7 +383,8 @@ export default function AllProject() {
                                         </div>
                                         <div>
                                             <span className="text-gray-500 block text-xs mb-1">Дата создания</span>
-                                            <span className="text-gray-300 font-medium">{formatDate(project.uploaded_at)}</span>
+                                            <span
+                                                className="text-gray-300 font-medium">{formatDate(project.uploaded_at)}</span>
                                         </div>
                                     </div>
 
@@ -393,7 +400,8 @@ export default function AllProject() {
                     </div>
 
                     {!loading && projects.length > 0 && (
-                        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between bg-[#1A1A25] p-3 sm:p-4 rounded-lg gap-3">
+                        <div
+                            className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between bg-[#1A1A25] p-3 sm:p-4 rounded-lg gap-3">
                             <div className="text-xs sm:text-sm text-gray-400">
                                 Показаны {start} - {end} из {totalCount}
                             </div>
@@ -409,7 +417,8 @@ export default function AllProject() {
                                 >
                                     ← Назад
                                 </button>
-                                <span className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-sm whitespace-nowrap">
+                                <span
+                                    className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-sm whitespace-nowrap">
                                     Стр. {currentPage}
                                 </span>
                                 <button
@@ -427,12 +436,12 @@ export default function AllProject() {
                         </div>
                     )}
 
-                    <div className="mt-4 sm:mt-6">
+                    <div className="mt-4 mb-6 sm:mt-6">
                         <Link
                             href="/loadimage"
                             className="inline-flex items-center justify-center w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 border border-[#119BD7] text-[#119BD7] rounded-full font-medium hover:bg-[#119BD7] hover:text-white transition-colors text-sm sm:text-base"
                         >
-                            + Создать проект
+                            Создать проект
                         </Link>
                     </div>
                 </div>

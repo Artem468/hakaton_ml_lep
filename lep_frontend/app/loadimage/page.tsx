@@ -325,7 +325,7 @@ function LoadImage() {
                     <div
                         onDrop={handleDrop}
                         onDragOver={(e) => e.preventDefault()}
-                        className="bg-[#1A1A25] rounded-lg border border-[#919191] p-4 sm:p-6"
+                        className="bg-[#1A1A25] rounded-lg  p-4 sm:p-6"
                     >
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3">
                             <h2 className="font-semibold text-[#119BD7] text-base sm:text-lg">
@@ -475,7 +475,6 @@ function LoadImage() {
                                 }`}
                             >
                                 <span>Запустить анализ</span>
-                                <FiEye size={18}/>
                             </button>
 
                             {files.length > 0 && !isUploading && (
