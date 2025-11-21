@@ -333,6 +333,7 @@ class BatchUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
     @extend_schema(
+        tags=["Обработка и отдача фото"],
         summary="Обновить батч и получить ссылки на S3",
         description="""
         Обновляет имя батча и генерирует Presigned URLs для загрузки файлов в S3.
