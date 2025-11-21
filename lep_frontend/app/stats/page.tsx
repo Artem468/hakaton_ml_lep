@@ -17,6 +17,7 @@ interface Stats {
     total: number;
     processed: number;
     not_processed: number;
+    damage_percentage: number
 }
 
 interface DailyStat {
@@ -61,7 +62,6 @@ export default function Stats() {
     const processedPercentage = stats ? Math.round((stats.processed / stats.total) * 100) : 0;
     const defectsPercentage = 68;
 
-    // Подготовка данных для графика
     const chartData = defectsStats ? {
         labels: defectsStats.daily_stats.map(stat => {
             const date = new Date(stat.date);
@@ -233,7 +233,7 @@ export default function Stats() {
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <span className="text-3xl sm:text-4xl font-bold text-white">
-                                                {defectsPercentage}%
+                                                ${stats.damage_percentage}%
                                             </span>
                                         </div>
                                     </div>
