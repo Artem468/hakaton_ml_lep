@@ -2,15 +2,17 @@ from collections import defaultdict
 from datetime import timedelta
 
 from django.conf import settings
+from django.db.models import Count, Q
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
-    extend_schema,
     OpenApiParameter,
     OpenApiExample,
     OpenApiResponse,
 )
-from rest_framework import generics, status
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics
+from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -263,13 +265,23 @@ class BatchStatusView(generics.RetrieveAPIView):
 class BatchImagesStatsView(APIView):
     @extend_schema(
         tags=["Обработка и отдача фото"],
-        summary="Процент обработанных фотографий от общего количества",
-        description="Процент обработанных фотографий от общего количества",
+        summary="Процент обработанных фотографий от общего количества по батчам",
+        description="Статистика обработки фотографий для каждого батча отдельно",
         responses={
             200: {
-                "total": "integer",
-                "processed": "integer",
-                "not_processed": "integer",
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "batch_id": {"type": "integer"},
+                        "batch_name": {"type": "string"},
+                        "total": {"type": "integer"},
+                        "processed": {"type": "integer"},
+                        "not_processed": {"type": "integer"},
+                        "images_with_damage": {"type": "integer"},
+                        "damage_percentage": {"type": "number"}
+                    }
+                }
             }
         },
     )
@@ -280,42 +292,57 @@ class BatchImagesStatsView(APIView):
             "nest",
         }
 
-        total = LepImage.objects.count()
-        processed = LepImage.objects.filter(detection_result__isnull=False).count()
-        not_processed = total - processed
+        # Получаем агрегированные данные по каждому батчу
+        batches_stats = Batch.objects.annotate(
+            total=Count('lepimage'),
+            processed=Count('lepimage', filter=Q(lepimage__detection_result__isnull=False))
+        ).values('id', 'name', 'total', 'processed')
 
-        images_with_damage = 0
+        result = []
 
-        processed_images = LepImage.objects.filter(
-            detection_result__isnull=False
-        ).only('detection_result')
+        for batch_stat in batches_stats:
+            batch_id = batch_stat['id']
+            total = batch_stat['total']
+            processed = batch_stat['processed']
+            not_processed = total - processed
 
-        for image in processed_images:
-            if not image.detection_result:
-                continue
+            # Подсчитываем изображения с повреждениями для данного батча
+            images_with_damage = 0
 
-            has_damage = any(
-                item.get("class") in damage_classes
-                for item in image.detection_result
-            )
+            if processed > 0:
+                processed_images = LepImage.objects.filter(
+                    batch_id=batch_id,
+                    detection_result__isnull=False
+                ).only('detection_result')
 
-            if has_damage:
-                images_with_damage += 1
+                for image in processed_images:
+                    if not image.detection_result:
+                        continue
 
-        damage_percentage = 0.0
-        if processed > 0:
-            damage_percentage = round((images_with_damage / processed) * 100, 2)
+                    has_damage = any(
+                        item.get("class") in damage_classes
+                        for item in image.detection_result
+                    )
 
-        return Response(
-            {
+                    if has_damage:
+                        images_with_damage += 1
+
+            damage_percentage = 0.0
+            if processed > 0:
+                damage_percentage = round((images_with_damage / processed) * 100, 2)
+
+            result.append({
+                "batch_id": batch_id,
+                "batch_name": batch_stat['name'] or '---',
                 "total": total,
                 "processed": processed,
                 "not_processed": not_processed,
                 "images_with_damage": images_with_damage,
                 "damage_percentage": damage_percentage
-            },
-            status=status.HTTP_200_OK,
-        )
+            })
+
+        return Response(result, status=status.HTTP_200_OK)
+
 
 @extend_schema(
     tags=["Обработка и отдача фото"],
