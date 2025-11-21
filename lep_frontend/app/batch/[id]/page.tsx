@@ -376,6 +376,7 @@ export default function ProjectPage() {
     const getClassNameRu = (className: string): string => {
         return CLASS_TRANSLATIONS[className] || className;
     };
+
     const downloadImage = async (url: string, filename: string) => {
         try {
             const response = await fetch(url);
@@ -389,13 +390,13 @@ export default function ProjectPage() {
             link.click();
             document.body.removeChild(link);
 
-
             window.URL.revokeObjectURL(blobUrl);
         } catch (error) {
             console.error('Ошибка при скачивании файла:', error);
             alert('Не удалось скачать файл');
         }
     };
+
     const formatDateTime = (dateString: string | null): string => {
         if (!dateString) return "Не указана";
         const date = new Date(dateString);
@@ -408,57 +409,54 @@ export default function ProjectPage() {
         return `${d}.${m}.${y} ${h}:${min}`;
     };
 
-
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
             <Image
                 src={backImage}
                 alt=""
-                className="absolute right-0 z-0 size-96 bottom-0 pointer-events-none"
+                className="absolute right-0 z-0 size-64 md:size-96 bottom-0 pointer-events-none opacity-50"
             />
             <Header/>
 
-            <div className="w-4/5 mt-6 z-20">
-                <div className="bg-[#1A1A25] flex justify-between p-6 rounded-lg mb-6">
+            <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8 mt-4 sm:mt-6 z-20">
+                <div className="bg-[#1A1A25] flex flex-col lg:flex-row justify-between p-4 sm:p-6 rounded-lg mb-4 sm:mb-6 gap-4">
                     <div>
-                        <div className="text-sm text-gray-500 mb-2">
+                        <div className="text-xs sm:text-sm text-gray-500 mb-2">
                             <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
                                 Главная
                             </Link>{" "}
                             / {batchStatus.name}
                         </div>
-                        <h1 className="text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
-                        <p className="text-sm text-gray-400 mt-2">
+                        <h1 className="text-xl sm:text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
+                        <p className="text-xs sm:text-sm text-gray-400 mt-2">
                             Всего фотографий: {photos.length}
                         </p>
                     </div>
 
-                    <div className="pt-4">
+                    <div className="pt-0 lg:pt-4">
                         <div className="flex items-start">
-                            <div
-                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                             <div className="flex-1">
-                          <span className="text-gray-400 text-sm">
-                            Статистика проекта:
-                          </span>
-                                <p className="text-white">
+                                <span className="text-gray-400 text-xs sm:text-sm">
+                                    Статистика проекта:
+                                </span>
+                                <p className="text-white text-sm">
                                     Всего фотографий: {photos.length} | Дефектов:{" "}
                                     <span className="text-red-400 font-semibold">
-                              {defectCount}
-                            </span>{" "}
+                                        {defectCount}
+                                    </span>{" "}
                                     | Без дефектов:{" "}
                                     <span className="text-green-400 font-semibold">
-                              {photos.length - defectCount}
-                            </span>
+                                        {photos.length - defectCount}
+                                    </span>
                                 </p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-
-                <div className="bg-[#1A1A25] rounded-lg p-6 mb-6">
-                    <div className="flex items-center justify-between">
+                <div className="bg-[#1A1A25] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+                    <div className="hidden md:flex items-center justify-between">
                         {STATUS_STEPS.map((step, index) => (
                             <React.Fragment key={step.key}>
                                 <div className="flex flex-col items-center relative">
@@ -496,8 +494,8 @@ export default function ProjectPage() {
                                             isStepActive(index) ? "text-[#119BD7]" : "text-gray-500"
                                         }`}
                                     >
-                    {step.label}
-                  </span>
+                                        {step.label}
+                                    </span>
                                 </div>
                                 {index < STATUS_STEPS.length - 1 && (
                                     <div className="flex-1 h-0.5 mx-4 relative top-[-20px]">
@@ -511,22 +509,51 @@ export default function ProjectPage() {
                             </React.Fragment>
                         ))}
                     </div>
+
+                    <div className="md:hidden space-y-3">
+                        <p className="text-sm text-gray-400 mb-3">
+                            Текущий статус: <span className={`font-semibold ${isStepActive(getStatusIndex(batchStatus.processing_status)) ? "text-[#119BD7]" : "text-gray-500"}`}>
+                                {STATUS_STEPS[getStatusIndex(batchStatus.processing_status)].label}
+                            </span>
+                        </p>
+                        {STATUS_STEPS.map((step, index) => (
+                            <div key={step.key} className="flex items-center gap-3">
+                                <div
+                                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all flex-shrink-0 ${
+                                        isStepActive(index)
+                                            ? "bg-[#119BD7] border-[#119BD7]"
+                                            : "bg-transparent border-gray-600"
+                                    }`}
+                                >
+                                    {isStepActive(index) && !isStepCurrent(index) ? (
+                                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                    ) : (
+                                        <div className={`w-2.5 h-2.5 rounded-full ${isStepActive(index) ? "bg-white" : "bg-gray-600"}`}/>
+                                    )}
+                                </div>
+                                <span className={`text-sm font-medium ${isStepActive(index) ? "text-[#119BD7]" : "text-gray-500"}`}>
+                                    {step.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div className="bg-[#1A1A25] rounded-xl z-20 overflow-hidden mb-6">
+                <div className="bg-[#1A1A25] rounded-xl z-20 overflow-hidden mb-4 sm:mb-6">
                     <div
                         ref={mapContainer}
-                        className="relative h-[400px] w-full"
-                        style={{minHeight: "400px"}}
+                        className="relative h-[250px] sm:h-[350px] md:h-[400px] w-full"
                     />
                 </div>
 
-                <div className="bg-[#1A1A25] rounded-xl z-20 p-6 mb-6">
-                    <h2 className="text-xl font-bold text-white mb-4">Фотографии</h2>
+                <div className="bg-[#1A1A25] rounded-xl z-20 p-4 sm:p-6 mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-4">Фотографии</h2>
                     <div
-                        className="grid grid-cols-5 gap-3 overflow-y-auto pr-2"
+                        className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 overflow-y-auto pr-1 sm:pr-2"
                         style={{
-                            maxHeight: photos.length > 30 ? "600px" : "none"
+                            maxHeight: photos.length > 30 ? "500px" : "none"
                         }}
                     >
                         {photos.map((item, index) => (
@@ -547,8 +574,7 @@ export default function ProjectPage() {
                                     unoptimized
                                 />
                                 {item.damages && item.damages.length > 0 && (
-                                    <div
-                                        className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                                    <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-red-500 text-white text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full font-semibold">
                                         Дефект
                                     </div>
                                 )}
@@ -556,17 +582,17 @@ export default function ProjectPage() {
                         ))}
                     </div>
                     {photos.length > 30 && (
-                        <p className="text-sm text-gray-400 mt-3 text-center">
+                        <p className="text-xs sm:text-sm text-gray-400 mt-3 text-center">
                             Прокрутите, чтобы увидеть все фотографии
                         </p>
                     )}
                 </div>
 
                 {currentPhoto && (
-                    <div className="bg-[#1A1A25] rounded-xl p-6 mb-6">
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-1 space-y-4">
-                                <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
+                    <div className="bg-[#1A1A25] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+                            <div className="lg:col-span-1 space-y-3 sm:space-y-4">
+                                <div className="rounded-lg overflow-hidden bg-[#11111A] p-2 sm:p-3">
                                     <Image
                                         src={`${BASE_MINI}ml-media/${currentPhoto.preview}`}
                                         alt="Оригинал"
@@ -575,9 +601,9 @@ export default function ProjectPage() {
                                         unoptimized
                                         className="w-full h-auto object-cover rounded-lg"
                                     />
-                                    <p className="text-sm text-gray-400 mt-2 text-center">Оригинал</p>
+                                    <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">Оригинал</p>
                                 </div>
-                                <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
+                                <div className="rounded-lg overflow-hidden bg-[#11111A] p-2 sm:p-3">
                                     <Image
                                         src={`${BASE_MINI}ml-media/${currentPhoto.result}`}
                                         alt="С разметкой"
@@ -586,36 +612,33 @@ export default function ProjectPage() {
                                         unoptimized
                                         className="w-full h-auto object-cover rounded-lg"
                                     />
-                                    <p className="text-sm text-gray-400 mt-2 text-center">
+                                    <p className="text-xs sm:text-sm text-gray-400 mt-2 text-center">
                                         С разметкой
                                     </p>
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-2 space-y-4">
+                            <div className="lg:col-span-2 space-y-3 sm:space-y-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-white mb-4">
+                                    <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">
                                         Информация о фото #{selectedIndex + 1}
                                     </h3>
-                                    <div className="space-y-3">
+                                    <div className="space-y-2 sm:space-y-3">
                                         <div className="flex items-start">
-                                            <div
-                                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                             <div className="flex-1">
-                                                <span className="text-gray-400 text-sm">Дата загрузки:</span>
-                                                <p className="text-white">
+                                                <span className="text-gray-400 text-xs sm:text-sm">Дата загрузки:</span>
+                                                <p className="text-white text-sm">
                                                     {formatDateTime(currentPhoto.uploaded_at)}
                                                 </p>
                                             </div>
-
                                         </div>
 
                                         <div className="flex items-start">
-                                            <div
-                                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                            <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                             <div className="flex-1">
-                                                <span className="text-gray-400 text-sm">Координаты:</span>
-                                                <p className="text-white font-mono text-sm">
+                                                <span className="text-gray-400 text-xs sm:text-sm">Координаты:</span>
+                                                <p className="text-white font-mono text-xs sm:text-sm break-all">
                                                     {currentPhoto.latitude && currentPhoto.longitude
                                                         ? `${parseFloat(currentPhoto.latitude).toFixed(6)}, ${parseFloat(
                                                             currentPhoto.longitude
@@ -628,43 +651,38 @@ export default function ProjectPage() {
                                         {hasDefects ? (
                                             <>
                                                 <div className="flex items-start">
-                                                    <div
-                                                        className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <div className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
-                                                        <span className="text-gray-400 text-sm">Статус:</span>
-                                                        <p className="text-red-400 font-semibold">
+                                                        <span className="text-gray-400 text-xs sm:text-sm">Статус:</span>
+                                                        <p className="text-red-400 font-semibold text-sm">
                                                             Обнаружены дефекты ({currentDamages.length})
                                                         </p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-start">
-                                                    <div
-                                                        className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                    <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
-                                                        <span
-                                                            className="text-gray-400 text-sm">Обнаруженные дефекты:</span>
+                                                        <span className="text-gray-400 text-xs sm:text-sm">Обнаруженные дефекты:</span>
                                                         <div className="mt-2 space-y-2">
                                                             {currentDamages.map((damage, idx) => (
                                                                 <div key={idx} className="bg-[#11111A] p-2 rounded">
-                                                                    <p className="text-white font-semibold">{getClassNameRu(damage.class)}</p>
-                                                                    <p className="text-sm text-gray-400">
+                                                                    <p className="text-white font-semibold text-sm">{getClassNameRu(damage.class)}</p>
+                                                                    <p className="text-xs text-gray-400">
                                                                         Уверенность: {(damage.confidence * 100).toFixed(2)}%
                                                                     </p>
                                                                 </div>
                                                             ))}
-
                                                         </div>
                                                     </div>
                                                 </div>
                                             </>
                                         ) : (
                                             <div className="flex items-start">
-                                                <div
-                                                    className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                 <div className="flex-1">
-                                                    <span className="text-gray-400 text-sm">Статус:</span>
-                                                    <p className="text-green-400 font-semibold">
+                                                    <span className="text-gray-400 text-xs sm:text-sm">Статус:</span>
+                                                    <p className="text-green-400 font-semibold text-sm">
                                                         Дефекты не обнаружены
                                                     </p>
                                                 </div>
@@ -673,55 +691,50 @@ export default function ProjectPage() {
 
                                         {currentObjects.length > 0 && (
                                             <div className="flex items-start">
-                                                <div
-                                                    className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                                                <div className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                 <div className="flex-1">
-                                                    <span className="text-gray-400 text-sm">Обнаруженные объекты:</span>
+                                                    <span className="text-gray-400 text-xs sm:text-sm">Обнаруженные объекты:</span>
                                                     <div className="mt-2 space-y-2">
                                                         {currentObjects.map((obj, idx) => (
                                                             <div key={idx} className="bg-[#11111A] p-2 rounded">
-                                                                <p className="text-white">{getClassNameRu(obj.class)}</p>
-                                                                <p className="text-sm text-gray-400">
+                                                                <p className="text-white text-sm">{getClassNameRu(obj.class)}</p>
+                                                                <p className="text-xs text-gray-400">
                                                                     Уверенность: {(obj.confidence * 100).toFixed(2)}%
                                                                 </p>
                                                             </div>
                                                         ))}
-
                                                     </div>
                                                 </div>
                                             </div>
                                         )}
-
-
                                     </div>
-                                    <div className="flex gap-3 mt-6">
+
+                                    <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
                                         <button
                                             onClick={() => downloadImage(
                                                 `${BASE_MINI}ml-media/${currentPhoto.file_key}`,
                                                 `original_${selectedIndex + 1}.jpg`
                                             )}
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors text-sm"
                                         >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
-                                            Скачать оригинал
+                                            <span className="hidden sm:inline">Скачать оригинал</span>
+                                            <span className="sm:hidden">Оригинал</span>
                                         </button>
                                         <button
                                             onClick={() => downloadImage(
                                                 `${BASE_MINI}ml-media/${currentPhoto.result}`,
                                                 `processed_${selectedIndex + 1}.jpg`
                                             )}
-                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors text-sm"
                                         >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
                                             </svg>
-                                            Скачать обработанное ИИ
+                                            <span className="hidden sm:inline">Скачать обработанное ИИ</span>
+                                            <span className="sm:hidden">С разметкой</span>
                                         </button>
                                     </div>
                                 </div>
@@ -730,103 +743,107 @@ export default function ProjectPage() {
                     </div>
                 )}
 
-                <div className="bg-[#1A1A25] rounded-xl p-6 mb-6">
-                    <h2 className="text-xl font-bold text-white mb-4">
+                <div className="bg-[#1A1A25] rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-white mb-4">
                         Детальная информация
                     </h2>
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                            <tr className="border-b border-gray-700">
-                                <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    №
-                                </th>
-                                <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    Фото
-                                </th>
-                                <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    Ответ помощника
-                                </th>
-                                <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    Координаты
-                                </th>
-                                <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    Дата загрузки
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {paginatedPhotos.map((item, index) => {
-                                const actualIndex = (tablePage - 1) * TABLE_PAGE_SIZE + index;
-                                return (
-                                    <tr
-                                        key={item.id}
-                                        className="border-b border-gray-800 hover:bg-[#29293D] transition-colors cursor-pointer"
-                                        onClick={() => setSelectedIndex(actualIndex)}
-                                    >
-                                        <td className="py-4 px-4 text-gray-400 font-medium">
-                                            {String(getTableItemNumber(index)).padStart(2, "0")}
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <div className="w-16 h-16 relative rounded-lg overflow-hidden">
-                                                <Image
-                                                    src={`${BASE_MINI}ml-media/${item.preview}`}
-                                                    alt={`thumb-${index}`}
-                                                    fill
-                                                    unoptimized
-                                                    className="object-cover"
-                                                />
-                                            </div>
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            {item.damages && item.damages.length > 0 ? (
-                                                <div className="space-y-1">
-                                                    {item.damages.map((damage, idx) => (
-                                                        <span
-                                                            key={idx}
-                                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 mr-1"
-                                                        >
-                            {getClassNameRu(damage.class)}
-                        </span>
-                                                    ))}
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <div className="inline-block min-w-full align-middle">
+                            <table className="min-w-full text-xs sm:text-sm">
+                                <thead>
+                                <tr className="border-b border-gray-700">
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
+                                        №
+                                    </th>
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
+                                        Фото
+                                    </th>
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
+                                        Ответ
+                                    </th>
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs font-bold text-[#119BD7] uppercase hidden md:table-cell">
+                                        Координаты
+                                    </th>
+                                    <th className="py-2 sm:py-3 px-2 sm:px-4 text-left text-xs font-bold text-[#119BD7] uppercase hidden lg:table-cell">
+                                        Дата
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {paginatedPhotos.map((item, index) => {
+                                    const actualIndex = (tablePage - 1) * TABLE_PAGE_SIZE + index;
+                                    return (
+                                        <tr
+                                            key={item.id}
+                                            className="border-b border-gray-800 hover:bg-[#29293D] transition-colors cursor-pointer"
+                                            onClick={() => setSelectedIndex(actualIndex)}
+                                        >
+                                            <td className="py-2 sm:py-4 px-2 sm:px-4 text-gray-400 font-medium">
+                                                {String(getTableItemNumber(index)).padStart(2, "0")}
+                                            </td>
+                                            <td className="py-2 sm:py-4 px-2 sm:px-4">
+                                                <div className="w-12 h-12 sm:w-16 sm:h-16 relative rounded-lg overflow-hidden">
+                                                    <Image
+                                                        src={`${BASE_MINI}ml-media/${item.preview}`}
+                                                        alt={`thumb-${index}`}
+                                                        fill
+                                                        unoptimized
+                                                        className="object-cover"
+                                                    />
                                                 </div>
-                                            ) : (
-                                                <span
-                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
-                          Без дефектов
-                        </span>
-                                            )}
-                                        </td>
-                                        <td className="py-4 px-4 text-gray-400">
-                                            {item.latitude && item.longitude ? (
-                                                <span className="font-mono text-xs">
-                          {parseFloat(item.latitude).toFixed(6)},{" "}
-                                                    {parseFloat(item.longitude).toFixed(6)}
-                        </span>
-                                            ) : (
-                                                <span className="text-gray-600">Нет данных</span>
-                                            )}
-                                        </td>
-                                        <td className="py-4 px-4 text-gray-400">
-                                            {formatDateTime(currentPhoto.uploaded_at) || "—"}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                            </tbody>
-                        </table>
+                                            </td>
+                                            <td className="py-2 sm:py-4 px-2 sm:px-4">
+                                                {item.damages && item.damages.length > 0 ? (
+                                                    <div className="space-y-1">
+                                                        {item.damages.slice(0, 2).map((damage, idx) => (
+                                                            <span
+                                                                key={idx}
+                                                                className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 mr-1"
+                                                            >
+                                                                {getClassNameRu(damage.class)}
+                                                            </span>
+                                                        ))}
+                                                        {item.damages.length > 2 && (
+                                                            <span className="text-xs text-gray-400">+{item.damages.length - 2}</span>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
+                                                        Без дефектов
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-2 sm:py-4 px-2 sm:px-4 text-gray-400 hidden md:table-cell">
+                                                {item.latitude && item.longitude ? (
+                                                    <span className="font-mono text-xs">
+                                                        {parseFloat(item.latitude).toFixed(4)},{" "}
+                                                        {parseFloat(item.longitude).toFixed(4)}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-600">Нет данных</span>
+                                                )}
+                                            </td>
+                                            <td className="py-2 sm:py-4 px-2 sm:px-4 text-gray-400 text-xs hidden lg:table-cell">
+                                                {formatDateTime(currentPhoto.uploaded_at) || "—"}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     {photos.length > TABLE_PAGE_SIZE && (
-                        <div className="mt-6 flex items-center justify-between p-4 border-t border-gray-700">
-                            <div className="text-sm text-gray-400">
+                        <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-center justify-between p-3 sm:p-4 border-t border-gray-700 gap-3">
+                            <div className="text-xs sm:text-sm text-gray-400">
                                 Показано {((tablePage - 1) * TABLE_PAGE_SIZE) + 1} - {Math.min(tablePage * TABLE_PAGE_SIZE, photos.length)} из {photos.length}
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <button
                                     onClick={handleTablePreviousPage}
                                     disabled={tablePage === 1}
-                                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition-colors text-sm ${
                                         tablePage > 1
                                             ? "bg-[#119BD7] text-white hover:bg-[#1da9f0]"
                                             : "bg-gray-700 text-gray-500 cursor-not-allowed"
@@ -834,13 +851,13 @@ export default function ProjectPage() {
                                 >
                                     ← Назад
                                 </button>
-                                <span className="px-4 py-2 text-[#119BD7] font-semibold">
-                                    Страница {tablePage} из {totalTablePages}
+                                <span className="px-2 sm:px-4 py-2 text-[#119BD7] font-semibold text-xs sm:text-sm whitespace-nowrap">
+                                    Стр. {tablePage}/{totalTablePages}
                                 </span>
                                 <button
                                     onClick={handleTableNextPage}
                                     disabled={tablePage === totalTablePages}
-                                    className={`px-4 py-2 rounded-md font-medium transition-colors ${
+                                    className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-md font-medium transition-colors text-sm ${
                                         tablePage < totalTablePages
                                             ? "bg-[#119BD7] text-white hover:bg-[#1da9f0]"
                                             : "bg-gray-700 text-gray-500 cursor-not-allowed"
