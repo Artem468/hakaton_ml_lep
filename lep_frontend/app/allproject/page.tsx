@@ -383,8 +383,8 @@ export default function AllProject() {
                                                 {String(getItemNumber(index)).padStart(2, "0")}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-bold text-white">
-                                                    {project.name}
+                                                <div className={`text-sm font-bold ${project.name !== null && project.name !== "" ? "text-white" : "text-gray-300"}`}>
+                                                    {project.name !== null && project.name !== "" ? project.name : "Без названия"}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">

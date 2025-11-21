@@ -175,14 +175,6 @@ function LoadImage() {
 
     const handleUpload = async () => {
         if (isUploading) return;
-        if (!projectName || files.length === 0) {
-            toast.error("Пожалуйста, введите название проекта и добавьте фото");
-            return;
-        }
-        if (selectedModelId === null) {
-            toast.error("Пожалуйста, выберите модель нейросети");
-            return;
-        }
 
         setIsUploading(true);
         setUploadStage("uploading");
