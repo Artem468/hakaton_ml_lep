@@ -113,33 +113,6 @@ export default function ProjectPage() {
         return allPhotos.sort((a, b) => a.id - b.id);
     };
 
-    useEffect(() => {
-        async function load() {
-            setLoading(true);
-            try {
-                const statusData = await apiFetch<BatchStatus>(
-                    `vision/batches/status/${id}/`,
-                    {method: "GET"}
-                );
-                setBatchStatus(statusData);
-
-                const allPhotos = await loadAllPages(id as string);
-
-                setProject({
-                    count: allPhotos.length,
-                    next: null,
-                    previous: null,
-                    results: allPhotos,
-                });
-            } catch (err) {
-                console.error("Ошибка при загрузке данных:", err);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        load();
-    }, [id]);
 
     useEffect(() => {
         if (!mapContainer.current || !project || map.current) return;
