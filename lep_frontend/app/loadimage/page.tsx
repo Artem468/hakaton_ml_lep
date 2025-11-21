@@ -295,32 +295,7 @@ function LoadImage() {
                         className="bg-[#11111A] border text-[#919191] border-[#919191] rounded px-4 py-2 sm:py-3 w-full mb-4 sm:mb-6 focus:outline-none focus:ring-2 focus:ring-[#119BD7] text-sm sm:text-base"
                     />
 
-                    <div className="mb-4 sm:mb-6">
-                        <label className="block text-[#119BD7] font-medium mb-2 text-sm sm:text-base">
-                            Выберите модель нейросети
-                        </label>
-                        {modelsLoading ? (
-                            <div className="bg-[#11111A] border border-[#919191] rounded px-4 py-2 sm:py-3 w-full text-[#919191] text-sm sm:text-base">
-                                Загрузка моделей...
-                            </div>
-                        ) : models.length === 0 ? (
-                            <div className="bg-[#11111A] border border-red-500 rounded px-4 py-2 sm:py-3 w-full text-red-500 text-sm sm:text-base">
-                                Не удалось загрузить модели
-                            </div>
-                        ) : (
-                            <select
-                                value={selectedModelId ?? ""}
-                                onChange={(e) => setSelectedModelId(Number(e.target.value))}
-                                className="bg-[#11111A] border text-[#919191] border-[#919191] rounded px-4 py-2 sm:py-3 w-full focus:outline-none focus:ring-2 focus:ring-[#119BD7] text-sm sm:text-base"
-                            >
-                                {models.map((model) => (
-                                    <option key={model.id} value={model.id}>
-                                        {model.name}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
-                    </div>
+
 
                     <div
                         onDrop={handleDrop}
