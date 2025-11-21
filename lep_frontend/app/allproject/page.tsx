@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from "react";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { apiFetch } from "@/app/api/api";
-import { VscSettings } from "react-icons/vsc";
-import { BiCalendar } from "react-icons/bi";
+import {apiFetch} from "@/app/api/api";
+import {VscSettings} from "react-icons/vsc";
+import {BiCalendar} from "react-icons/bi";
 import Image from "next/image";
 import backImage from "@/app/assets/backimage.svg";
 import Header from "@/app/component/Header";
@@ -29,10 +29,10 @@ interface ApiResponse {
 type ProcessingStatus = "not_processed" | "processing" | "completed" | "reviewed";
 
 const STATUS_LABELS: Record<ProcessingStatus, { label: string; color: string }> = {
-    not_processed: { label: "Не обработан", color: "bg-gray-500" },
-    processing: { label: "В процессе", color: "bg-blue-500" },
-    completed: { label: "Завершен", color: "bg-yellow-500" },
-    reviewed: { label: "Проверен", color: "bg-green-500" },
+    not_processed: {label: "Не обработан", color: "bg-gray-500"},
+    processing: {label: "В процессе", color: "bg-blue-500"},
+    completed: {label: "Завершен", color: "bg-yellow-500"},
+    reviewed: {label: "Проверен", color: "bg-green-500"},
 };
 
 const PAGE_SIZE = 20;
@@ -48,6 +48,7 @@ export default function AllProject() {
         start: "",
         end: "",
     });
+    const [searchName, setSearchName] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [nextPage, setNextPage] = useState<string | null>(null);
@@ -56,7 +57,7 @@ export default function AllProject() {
 
     useEffect(() => {
         fetchProjects();
-    }, [currentPage]);
+    }, [currentPage, searchName]);
 
     const fetchProjects = async (page: number = currentPage) => {
         setLoading(true);
@@ -67,6 +68,7 @@ export default function AllProject() {
 
             if (dateRange.start) params.append("date_from", dateRange.start);
             if (dateRange.end) params.append("date_to", dateRange.end);
+            if (searchName.trim()) params.append("name", searchName.trim()); // для поиска
 
             const query = params.toString() ? `?${params.toString()}` : "";
             const url = `vision/batches/${query}`;
@@ -109,7 +111,7 @@ export default function AllProject() {
     };
 
     const handleResetFilters = () => {
-        setDateRange({ start: "", end: "" });
+        setDateRange({start: "", end: ""});
         setShowDateRangePicker(false);
         setCurrentPage(1);
         setItemsOnPreviousPages(0);
@@ -174,7 +176,7 @@ export default function AllProject() {
                 alt=""
                 className="absolute right-0 z-0 size-96 bottom-0 pointer-events-none"
             />
-            <Header />
+            <Header/>
 
             <div className="w-4/5 mt-6 z-20">
                 <div className=" rounded-lg">
@@ -193,49 +195,73 @@ export default function AllProject() {
                             onClick={() => setShowDateRangePicker(!showDateRangePicker)}
                             className="flex items-center gap-2 w-full justify-center hover:opacity-80 transition-opacity"
                         >
-                            <VscSettings size={36} className="text-[#119BD7]" />
-                            <div className="w-11/12 flex justify-center p-3 rounded-3xl text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
+                            <VscSettings size={36} className="text-[#119BD7]"/>
+                            <div
+                                className="w-11/12 flex justify-center p-3 rounded-3xl text-[#119BD7] font-semibold bg-[rgb(17,155,215,33%)]">
                                 {displayDateRange}
                             </div>
                         </button>
 
                         {showDateRangePicker && (
-                            <div className="w-11/12 mt-4 p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-6 transition-all">
+                            <div
+                                className="w-11/12 mt-4 p-6 rounded-xl bg-gradient-to-br from-[#1A1A25] to-[#14141F] border border-[#119BD7]/30 shadow-xl flex flex-col space-y-6 transition-all">
                                 <h3 className="text-lg font-bold text-[#119BD7] flex items-center gap-2">
-                                    <BiCalendar size={24} />
-                                    Выбор периода
+                                    <BiCalendar size={24}/>
+                                    Фильтры поиска
                                 </h3>
+
+                                {/* Поиск по имени */}
+                                <div className="space-y-2">
+                                    <label
+                                        className="block text-sm font-semibold text-[#CACACA] flex items-center gap-2">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                        Фильтр по имени
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={searchName}
+                                        onChange={(e) => setSearchName(e.target.value)}
+                                        placeholder="Введите имя набора фото..."
+                                        className="w-full px-4 py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-[#CACACA]
+                placeholder:text-gray-500
+                focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
+                hover:border-[#119BD7]/50 transition-all"
+                                    />
+                                </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
                                         <label className="block text-sm font-semibold text-[#CACACA]">
-                                            Начальная дата
+                                            Фильтр по дате (с)
                                         </label>
                                         <input
                                             type="date"
                                             value={dateRange.start}
                                             onChange={(e) => handleDateChange("start", e.target.value)}
                                             className="w-full px-4 py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-[#CACACA]
-                                            focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
-                                            hover:border-[#119BD7]/50 transition-all
-                                            [color-scheme:dark]
-                                            cursor-pointer"
+                    focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
+                    hover:border-[#119BD7]/50 transition-all
+                    [color-scheme:dark]
+                    cursor-pointer"
                                         />
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="block text-sm font-semibold text-[#CACACA]">
-                                            Конечная дата
+                                            Фильтр по дате (по)
                                         </label>
                                         <input
                                             type="date"
                                             value={dateRange.end}
                                             onChange={(e) => handleDateChange("end", e.target.value)}
                                             className="w-full px-4 py-3 bg-[#11111A] border-2 border-gray-700 rounded-lg text-[#CACACA]
-                                            focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
-                                            hover:border-[#119BD7]/50 transition-all
-                                            [color-scheme:dark]
-                                            cursor-pointer"
+                    focus:outline-none focus:border-[#119BD7] focus:ring-2 focus:ring-[#119BD7]/30
+                    hover:border-[#119BD7]/50 transition-all
+                    [color-scheme:dark]
+                    cursor-pointer"
                                         />
                                     </div>
                                 </div>
@@ -244,104 +270,113 @@ export default function AllProject() {
                                     <button
                                         onClick={handleResetFilters}
                                         className="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
-                                        hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
+                hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
                                     >
                                         Сбросить
                                     </button>
                                     <button
                                         onClick={() => setShowDateRangePicker(false)}
                                         className="px-5 py-2.5 text-sm font-semibold text-gray-300 bg-[#2A2A35] rounded-lg
-                                        hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
+                hover:bg-[#3A3A45] hover:scale-105 transition-all duration-200 shadow-md"
                                     >
                                         Отмена
                                     </button>
                                     <button
                                         onClick={handleApplyFilters}
                                         className="px-5 py-2.5 text-[#119BD7] font-semibold bg-[rgb(17,155,215,20%)] rounded-lg
-                                        hover:bg-[rgb(17,155,215,35%)] hover:scale-105 transition-all duration-200
-                                        border border-[#119BD7]/30 shadow-lg shadow-[#119BD7]/20"
+                hover:bg-[#119BD7]/35 hover:scale-105 transition-all duration-200
+                border border-[#119BD7]/30 shadow-lg shadow-[#119BD7]/20"
                                     >
                                         Применить фильтр
                                     </button>
                                 </div>
                             </div>
                         )}
+
+
                     </div>
 
                     <div className="bg-[#1A1A25] rounded-lg z-20 overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-800">
                                 <thead className="bg-[#1A1A25]">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            №
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Название
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Кол-во фото
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Дата создания
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Статус
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
-                                            Действия
-                                        </th>
-                                    </tr>
+                                <tr>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        №
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Название
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Кол-во фото
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Дата создания
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Статус
+                                    </th>
+                                    <th scope="col"
+                                        className="px-6 py-3 text-left text-xs font-bold text-[#119BD7] uppercase tracking-wider">
+                                        Действия
+                                    </th>
+                                </tr>
                                 </thead>
                                 <tbody className="bg-[#1A1A25] divide-y divide-gray-800">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                                <div className="flex justify-center items-center">
-                                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
-                                                    <span className="ml-3">Загрузка проектов...</span>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            <div className="flex justify-center items-center">
+                                                <div
+                                                    className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#119BD7]"></div>
+                                                <span className="ml-3">Загрузка проектов...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : projects.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                                            Нет проектов для отображения
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    projects.map((project, index) => (
+                                        <tr key={project.id} className="hover:bg-[#29293D] transition-colors">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
+                                                {String(itemsOnPreviousPages + index + 1).padStart(2, "0")}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <div className="text-sm font-bold text-white">
+                                                    {project.name}
                                                 </div>
                                             </td>
-                                        </tr>
-                                    ) : projects.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
-                                                Нет проектов для отображения
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                                {project.photo_count}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
+                                                {formatDate(project.uploaded_at)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                {getStatusBadge(project.processing_status)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                <Link
+                                                    href={`/batch/${project.id}?name=${encodeURIComponent(
+                                                        project.name
+                                                    )}`}
+                                                    className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
+                                                >
+                                                    Подробнее →
+                                                </Link>
                                             </td>
                                         </tr>
-                                    ) : (
-                                        projects.map((project, index) => (
-                                            <tr key={project.id} className="hover:bg-[#29293D] transition-colors">
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-400">
-                                                    {String(itemsOnPreviousPages + index + 1).padStart(2, "0")}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-bold text-white">
-                                                        {project.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                                    {project.photo_count}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                                    {formatDate(project.uploaded_at)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                                    {getStatusBadge(project.processing_status)}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                    <Link
-                                                        href={`/batch/${project.id}?name=${encodeURIComponent(
-                                                            project.name
-                                                        )}`}
-                                                        className="text-[#119BD7] hover:text-[#1da9f0] transition-colors"
-                                                    >
-                                                        Подробнее →
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))
-                                    )}
+                                    ))
+                                )}
                                 </tbody>
                             </table>
                         </div>

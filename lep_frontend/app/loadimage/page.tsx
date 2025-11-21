@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useState, useRef} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import {withAuth} from "@/app/hoc/withAuth";
 import {apiFetch} from "@/app/api/api";
 import {FiEye, FiUpload, FiPlus, FiTrash2} from "react-icons/fi";
@@ -27,6 +27,11 @@ interface InitBatchResponse {
     }[];
 }
 
+interface AIModel {
+    id: number;
+    name: string;
+}
+
 function LoadImage() {
     const [projectName, setProjectName] = useState("");
     const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -38,6 +43,31 @@ function LoadImage() {
     const [isUploading, setIsUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
     const [lastSelectedIndex, setLastSelectedIndex] = useState<number | null>(null);
+    const [models, setModels] = useState<AIModel[]>([]);
+    const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+    const [modelsLoading, setModelsLoading] = useState(true);
+
+    // Fetch available models on component mount
+    useEffect(() => {
+        const fetchModels = async () => {
+            try {
+                setModelsLoading(true);
+                const response = await apiFetch<AIModel[]>("vision/models/");
+                setModels(response);
+                // Automatically select the first model if available
+                if (response.length > 0) {
+                    setSelectedModelId(response[0].id);
+                }
+            } catch (error) {
+                console.error("Ошибка при загрузке моделей:", error);
+                toast.error("Не удалось загрузить список нейросетей");
+            } finally {
+                setModelsLoading(false);
+            }
+        };
+
+        fetchModels();
+    }, []);
 
     const handleFiles = async (selectedFiles: FileList) => {
         const newFiles: UploadedFile[] = [];
@@ -150,6 +180,10 @@ function LoadImage() {
             toast.error("Пожалуйста, введите название проекта и добавьте фото");
             return;
         }
+        if (selectedModelId === null) {
+            toast.error("Пожалуйста, выберите модель нейросети");
+            return;
+        }
 
         setIsUploading(true);
         setUploadStage("uploading");
@@ -219,7 +253,7 @@ function LoadImage() {
 
             await apiFetch("vision/batches/confirm/", {
                 method: "POST",
-                body: JSON.stringify({batch_id: batchId, model_id: 1}),
+                body: JSON.stringify({batch_id: batchId, model_id: selectedModelId}),
             });
 
             setUploadStage("idle");
@@ -260,6 +294,34 @@ function LoadImage() {
                         onChange={(e) => setProjectName(e.target.value)}
                         className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full mb-6 focus:outline-none focus:ring-2"
                     />
+
+                    {/* Model Selection Dropdown */}
+                    <div className="mb-6">
+                        <label className="block text-[#119BD7] font-medium mb-2">
+                            Выберите модель нейросети
+                        </label>
+                        {modelsLoading ? (
+                            <div className="border border-[#919191] rounded px-4 py-2 w-full text-[#919191]">
+                                Загрузка моделей...
+                            </div>
+                        ) : models.length === 0 ? (
+                            <div className="border border-red-500 rounded px-4 py-2 w-full text-red-500">
+                                Не удалось загрузить модели
+                            </div>
+                        ) : (
+                            <select
+                                value={selectedModelId ?? ""}
+                                onChange={(e) => setSelectedModelId(Number(e.target.value))}
+                                className="border text-[#919191] border-[#919191] rounded px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-[#119BD7] bg-[#1A1A25]"
+                            >
+                                {models.map((model) => (
+                                    <option key={model.id} value={model.id}>
+                                        {model.name}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                    </div>
 
                     <div
                         onDrop={handleDrop}
@@ -404,9 +466,9 @@ function LoadImage() {
                         <div className="flex justify-between items-center mt-4">
                             <button
                                 onClick={handleUpload}
-                                disabled={isUploading || files.length === 0}
+                                disabled={isUploading || files.length === 0 || selectedModelId === null}
                                 className={`px-6 py-2 rounded-full border border-[#119BD7] text-[#119BD7] font-medium flex items-center gap-2 ${
-                                    isUploading || files.length === 0
+                                    isUploading || files.length === 0 || selectedModelId === null
                                         ? "opacity-50 cursor-not-allowed"
                                         : "transition-colors"
                                 }`}

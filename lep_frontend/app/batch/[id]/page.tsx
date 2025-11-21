@@ -11,11 +11,9 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import Header from "@/app/component/Header";
 
-interface DetectionResult {
-    id: number;
-    defect_type: string;
+interface DetectionObject {
+    class: string;
     confidence: number;
-    coordinates: { x: number; y: number; width: number; height: number };
 }
 
 interface User {
@@ -29,10 +27,12 @@ interface BatchItem {
     id: number;
     file_key: string;
     preview: string | null;
+    result: string | null;
     latitude: string;
     longitude: string;
-    created_at: string | null;
-    detection_result: DetectionResult | null;
+    uploaded_at: string | null;
+    damages: DetectionObject[];
+    objects: DetectionObject[];
 }
 
 interface ApiResponse {
@@ -256,7 +256,7 @@ export default function ProjectPage() {
             el.style.boxShadow = "0 2px 6px rgba(0,0,0,0.4)";
             el.style.transition = "transform 0.2s";
 
-            if (photo.detection_result) {
+            if (photo.damages && photo.damages.length > 0) {
                 el.style.backgroundColor = "#EF4444";
             } else {
                 el.style.backgroundColor = "#10B981";
@@ -282,8 +282,8 @@ export default function ProjectPage() {
             <div style="color: #1a1a25; padding: 8px; font-family: system-ui;">
               <strong style="font-size: 14px;">Фото #${photos.indexOf(photo) + 1}</strong><br/>
               ${
-                photo.detection_result
-                    ? `<span style="color: #EF4444; font-weight: 600;">⚠ Дефект: ${photo.detection_result.defect_type}</span>`
+                photo.damages && photo.damages.length > 0
+                    ? `<span style="color: #EF4444; font-weight: 600;">⚠ Дефектов: ${photo.damages.length}</span>`
                     : '<span style="color: #10B981; font-weight: 600;">✓ Без дефектов</span>'
             }
             </div>
@@ -335,8 +335,10 @@ export default function ProjectPage() {
 
     const photos = project.results;
     const currentPhoto = photos[selectedIndex];
-    const currentDetection = currentPhoto?.detection_result ?? null;
-    const defectCount = photos.filter((item) => item.detection_result).length;
+    const currentDamages = currentPhoto?.damages ?? [];
+    const currentObjects = currentPhoto?.objects ?? [];
+    const hasDefects = currentDamages.length > 0;
+    const defectCount = photos.filter((item) => item.damages && item.damages.length > 0).length;
 
     const totalTablePages = Math.ceil(photos.length / TABLE_PAGE_SIZE);
     const paginatedPhotos = photos.slice(
@@ -360,28 +362,100 @@ export default function ProjectPage() {
         return (tablePage - 1) * TABLE_PAGE_SIZE + index + 1;
     };
 
+    const CLASS_TRANSLATIONS: Record<string, string> = {
+        vibration_damper: "Виброгаситель",
+        festoon_insulators: "Гирлянда изоляторов",
+        traverse: "Траверса",
+        bad_insulator: "Поврежденный изолятор",
+        damaged_insulator: "Дефектный изолятор",
+        polymer_insulators: "Полимерные изоляторы",
+        nest: "Гнездо",
+        safety_sign: "Знак безопасности",
+    };
+
+    const getClassNameRu = (className: string): string => {
+        return CLASS_TRANSLATIONS[className] || className;
+    };
+    const downloadImage = async (url: string, filename: string) => {
+        try {
+            const response = await fetch(url);
+            const blob = await response.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (error) {
+            console.error('Ошибка при скачивании файла:', error);
+            alert('Не удалось скачать файл');
+        }
+    };
+    const formatDateTime = (dateString: string | null): string => {
+        if (!dateString) return "Не указана";
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return "Не указана";
+        const d = date.getDate().toString().padStart(2, "0");
+        const m = (date.getMonth() + 1).toString().padStart(2, "0");
+        const y = date.getFullYear();
+        const h = date.getHours().toString().padStart(2, "0");
+        const min = date.getMinutes().toString().padStart(2, "0");
+        return `${d}.${m}.${y} ${h}:${min}`;
+    };
+
+
     return (
         <div className="w-full mx-auto bg-[#11111A] min-h-screen flex flex-col items-center">
-             <Image
+            <Image
                 src={backImage}
                 alt=""
                 className="absolute right-0 z-0 size-96 bottom-0 pointer-events-none"
             />
-            <Header />
+            <Header/>
 
             <div className="w-4/5 mt-6 z-20">
-                <div className="bg-[#1A1A25] p-6 rounded-lg mb-6">
-                    <div className="text-sm text-gray-500 mb-2">
-                        <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
-                            Главная
-                        </Link>{" "}
-                        / {batchStatus.name}
+                <div className="bg-[#1A1A25] flex justify-between p-6 rounded-lg mb-6">
+                    <div>
+                        <div className="text-sm text-gray-500 mb-2">
+                            <Link href="/loadimage" className="hover:text-gray-300 transition-colors">
+                                Главная
+                            </Link>{" "}
+                            / {batchStatus.name}
+                        </div>
+                        <h1 className="text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
+                        <p className="text-sm text-gray-400 mt-2">
+                            Всего фотографий: {photos.length}
+                        </p>
                     </div>
-                    <h1 className="text-2xl font-bold text-[#119BD7]">{batchStatus.name}</h1>
-                    <p className="text-sm text-gray-400 mt-2">
-                        Всего фотографий: {photos.length}
-                    </p>
+
+                    <div className="pt-4">
+                        <div className="flex items-start">
+                            <div
+                                className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                            <div className="flex-1">
+                          <span className="text-gray-400 text-sm">
+                            Статистика проекта:
+                          </span>
+                                <p className="text-white">
+                                    Всего фотографий: {photos.length} | Дефектов:{" "}
+                                    <span className="text-red-400 font-semibold">
+                              {defectCount}
+                            </span>{" "}
+                                    | Без дефектов:{" "}
+                                    <span className="text-green-400 font-semibold">
+                              {photos.length - defectCount}
+                            </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
 
                 <div className="bg-[#1A1A25] rounded-lg p-6 mb-6">
                     <div className="flex items-center justify-between">
@@ -425,7 +499,6 @@ export default function ProjectPage() {
                     {step.label}
                   </span>
                                 </div>
-
                                 {index < STATUS_STEPS.length - 1 && (
                                     <div className="flex-1 h-0.5 mx-4 relative top-[-20px]">
                                         <div
@@ -467,13 +540,13 @@ export default function ProjectPage() {
                                 }`}
                             >
                                 <Image
-                                    src={`http://127.0.0.1:9000/ml-media/${item.file_key}`}
+                                    src={`http://127.0.0.1:9000/ml-media/${item.preview}`}
                                     alt="photo"
                                     fill
                                     className="object-cover"
                                     unoptimized
                                 />
-                                {item.detection_result && (
+                                {item.damages && item.damages.length > 0 && (
                                     <div
                                         className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-semibold">
                                         Дефект
@@ -495,7 +568,7 @@ export default function ProjectPage() {
                             <div className="lg:col-span-1 space-y-4">
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
                                     <Image
-                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.file_key}`}
+                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.preview}`}
                                         alt="Оригинал"
                                         width={400}
                                         height={300}
@@ -506,7 +579,7 @@ export default function ProjectPage() {
                                 </div>
                                 <div className="rounded-lg overflow-hidden bg-[#11111A] p-3">
                                     <Image
-                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.file_key}`}
+                                        src={`http://127.0.0.1:9000/ml-media/${currentPhoto.result}`}
                                         alt="С разметкой"
                                         width={400}
                                         height={300}
@@ -529,11 +602,12 @@ export default function ProjectPage() {
                                             <div
                                                 className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                             <div className="flex-1">
-                                                <span className="text-gray-400 text-sm">Дата создания:</span>
+                                                <span className="text-gray-400 text-sm">Дата загрузки:</span>
                                                 <p className="text-white">
-                                                    {currentPhoto.created_at || "Не указана"}
+                                                    {formatDateTime(currentPhoto.uploaded_at)}
                                                 </p>
                                             </div>
+
                                         </div>
 
                                         <div className="flex items-start">
@@ -551,35 +625,15 @@ export default function ProjectPage() {
                                             </div>
                                         </div>
 
-                                        {currentDetection ? (
+                                        {hasDefects ? (
                                             <>
                                                 <div className="flex items-start">
                                                     <div
                                                         className="w-2 h-2 bg-red-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
                                                         <span className="text-gray-400 text-sm">Статус:</span>
-                                                        <p className="text-red-400 font-semibold">Обнаружен дефект</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-start">
-                                                    <div
-                                                        className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                                    <div className="flex-1">
-                                                        <span className="text-gray-400 text-sm">Тип дефекта:</span>
-                                                        <p className="text-white">{currentDetection.defect_type}</p>
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-start">
-                                                    <div
-                                                        className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                                    <div className="flex-1">
-                            <span className="text-gray-400 text-sm">
-                              Уверенность модели:
-                            </span>
-                                                        <p className="text-white">
-                                                            {(currentDetection.confidence * 100).toFixed(2)}%
+                                                        <p className="text-red-400 font-semibold">
+                                                            Обнаружены дефекты ({currentDamages.length})
                                                         </p>
                                                     </div>
                                                 </div>
@@ -588,25 +642,19 @@ export default function ProjectPage() {
                                                     <div
                                                         className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                     <div className="flex-1">
-                            <span className="text-gray-400 text-sm">
-                              Координаты дефекта:
-                            </span>
-                                                        <p className="text-white font-mono text-sm">
-                                                            X: {currentDetection.coordinates.x}, Y:{" "}
-                                                            {currentDetection.coordinates.y}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                                        <span
+                                                            className="text-gray-400 text-sm">Обнаруженные дефекты:</span>
+                                                        <div className="mt-2 space-y-2">
+                                                            {currentDamages.map((damage, idx) => (
+                                                                <div key={idx} className="bg-[#11111A] p-2 rounded">
+                                                                    <p className="text-white font-semibold">{getClassNameRu(damage.class)}</p>
+                                                                    <p className="text-sm text-gray-400">
+                                                                        Уверенность: {(damage.confidence * 100).toFixed(2)}%
+                                                                    </p>
+                                                                </div>
+                                                            ))}
 
-                                                <div className="flex items-start">
-                                                    <div
-                                                        className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
-                                                    <div className="flex-1">
-                                                        <span className="text-gray-400 text-sm">Размер области:</span>
-                                                        <p className="text-white font-mono text-sm">
-                                                            {currentDetection.coordinates.width} ×{" "}
-                                                            {currentDetection.coordinates.height} px
-                                                        </p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </>
@@ -623,27 +671,58 @@ export default function ProjectPage() {
                                             </div>
                                         )}
 
-                                        <div className="pt-4 border-t border-gray-700">
+                                        {currentObjects.length > 0 && (
                                             <div className="flex items-start">
                                                 <div
                                                     className="w-2 h-2 bg-[#119BD7] rounded-full mt-2 mr-3 flex-shrink-0"></div>
                                                 <div className="flex-1">
-                          <span className="text-gray-400 text-sm">
-                            Статистика проекта:
-                          </span>
-                                                    <p className="text-white">
-                                                        Всего фотографий: {photos.length} | Дефектов:{" "}
-                                                        <span className="text-red-400 font-semibold">
-                              {defectCount}
-                            </span>{" "}
-                                                        | Без дефектов:{" "}
-                                                        <span className="text-green-400 font-semibold">
-                              {photos.length - defectCount}
-                            </span>
-                                                    </p>
+                                                    <span className="text-gray-400 text-sm">Обнаруженные объекты:</span>
+                                                    <div className="mt-2 space-y-2">
+                                                        {currentObjects.map((obj, idx) => (
+                                                            <div key={idx} className="bg-[#11111A] p-2 rounded">
+                                                                <p className="text-white">{getClassNameRu(obj.class)}</p>
+                                                                <p className="text-sm text-gray-400">
+                                                                    Уверенность: {(obj.confidence * 100).toFixed(2)}%
+                                                                </p>
+                                                            </div>
+                                                        ))}
+
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                        )}
+
+
+                                    </div>
+                                    <div className="flex gap-3 mt-6">
+                                        <button
+                                            onClick={() => downloadImage(
+                                                `http://127.0.0.1:9000/ml-media/${currentPhoto.file_key}`,
+                                                `original_${selectedIndex + 1}.jpg`
+                                            )}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-[#119BD7] hover:bg-[#1da9f0] text-white font-semibold rounded-lg transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor"
+                                                 viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Скачать оригинал
+                                        </button>
+                                        <button
+                                            onClick={() => downloadImage(
+                                                `http://127.0.0.1:9000/ml-media/${currentPhoto.result}`,
+                                                `processed_${selectedIndex + 1}.jpg`
+                                            )}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition-colors"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor"
+                                                 viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                            </svg>
+                                            Скачать обработанное ИИ
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -672,7 +751,7 @@ export default function ProjectPage() {
                                     Координаты
                                 </th>
                                 <th className="py-3 px-4 text-left text-xs font-bold text-[#119BD7] uppercase">
-                                    Дата создания
+                                    Дата загрузки
                                 </th>
                             </tr>
                             </thead>
@@ -691,7 +770,7 @@ export default function ProjectPage() {
                                         <td className="py-4 px-4">
                                             <div className="w-16 h-16 relative rounded-lg overflow-hidden">
                                                 <Image
-                                                    src={`http://127.0.0.1:9000/ml-media/${item.file_key}`}
+                                                    src={`http://127.0.0.1:9000/ml-media/${item.preview}`}
                                                     alt={`thumb-${index}`}
                                                     fill
                                                     unoptimized
@@ -700,11 +779,17 @@ export default function ProjectPage() {
                                             </div>
                                         </td>
                                         <td className="py-4 px-4">
-                                            {item.detection_result ? (
-                                                <span
-                                                    className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30">
-                          {item.detection_result.defect_type}
+                                            {item.damages && item.damages.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {item.damages.map((damage, idx) => (
+                                                        <span
+                                                            key={idx}
+                                                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 mr-1"
+                                                        >
+                            {getClassNameRu(damage.class)}
                         </span>
+                                                    ))}
+                                                </div>
                                             ) : (
                                                 <span
                                                     className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30">
@@ -723,7 +808,7 @@ export default function ProjectPage() {
                                             )}
                                         </td>
                                         <td className="py-4 px-4 text-gray-400">
-                                            {item.created_at || "—"}
+                                            {formatDateTime(currentPhoto.uploaded_at) || "—"}
                                         </td>
                                     </tr>
                                 );
