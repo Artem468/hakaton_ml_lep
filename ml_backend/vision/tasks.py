@@ -51,7 +51,7 @@ def process_image_task(file_key: str, model_id: int):
         img_format = image.format if image.format else "JPEG"
 
         # Выполняем детекцию используя путь к файлу, а не PIL объект
-        results = model.predict(tmp_path, imgsz=640, conf=0.25, save=False)
+        results = model.predict(tmp_path, imgsz=768, conf=0.25, save=False)
 
         # Проверяем что результаты получены
         if not results or len(results) == 0:
