@@ -1,8 +1,8 @@
-import datetime
 from collections import defaultdict
 from datetime import timedelta
 
 from django.conf import settings
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import (
     extend_schema,
@@ -274,15 +274,48 @@ class BatchImagesStatsView(APIView):
         },
     )
     def get(self, request):
+        damage_classes = {
+            "bad_insulator",
+            "damaged_insulator",
+            "nest",
+        }
+
         total = LepImage.objects.count()
         processed = LepImage.objects.filter(detection_result__isnull=False).count()
         not_processed = total - processed
 
+        images_with_damage = 0
+
+        processed_images = LepImage.objects.filter(
+            detection_result__isnull=False
+        ).only('detection_result')
+
+        for image in processed_images:
+            if not image.detection_result:
+                continue
+
+            has_damage = any(
+                item.get("class") in damage_classes
+                for item in image.detection_result
+            )
+
+            if has_damage:
+                images_with_damage += 1
+
+        damage_percentage = 0.0
+        if processed > 0:
+            damage_percentage = round((images_with_damage / processed) * 100, 2)
+
         return Response(
-            {"total": total, "processed": processed, "not_processed": not_processed},
+            {
+                "total": total,
+                "processed": processed,
+                "not_processed": not_processed,
+                "images_with_damage": images_with_damage,
+                "damage_percentage": damage_percentage
+            },
             status=status.HTTP_200_OK,
         )
-
 
 @extend_schema(
     tags=["Обработка и отдача фото"],
@@ -407,7 +440,7 @@ class DefectStatsView(APIView):
         responses={200: DefectStatsWeeklySerializer}
     )
     def get(self, request):
-        end_date = datetime.datetime.now()
+        end_date = timezone.now()
         start_date = end_date - timedelta(days=7)
 
         damage_classes = {
